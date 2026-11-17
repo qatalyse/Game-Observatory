@@ -44,7 +44,7 @@ FIELDS = (
 STATUS_FIELDS = (
     "snapshot_id", "retrieved_at_utc", "country", "feed_type", "genre",
     "genre_id", "requested_depth", "source_count", "snapshot_depth", "tracked_app_ids_found", "returned_count", "http_status",
-    "status", "limit_behavior", "source_count", "category_filter_id", "error",
+    "status", "limit_behavior", "category_filter_id", "error",
     "feed_updated_at", "feed_fields", "entry_fields", "source_url",
 )
 SOURCE = "apple_legacy_itunes_rss"
@@ -124,7 +124,8 @@ def parse_entries(payload: dict, depth: int, feed_type: str) -> tuple[list[dict]
         raise ValueError("Invalid Apple RSS entry list")
     # New Applications may ignore the requested limit; retain every returned entry.
     # Top Grossing remains a strictly limited chart.
-    # Parse the complete response first; chart retention is applied after tracking.
+    if feed_type == "top-grossing" and len(raw) > depth:
+        raise ValueError(f"Feed returned {len(raw)} entries, exceeding requested depth {depth}")
 
     feed_meta = {
         "feed_updated_at": _label(feed.get("updated")),
@@ -261,7 +262,8 @@ def collect(
             error = f"HTTPError: HTTP {exc.code}"
         except (ValueError, KeyError, TypeError, URLError, OSError, TimeoutError, json.JSONDecodeError) as exc:
             rows, entries, status = [], [], "error"
-            source_count, category_filter_id = 0, ""
+            source_count, category_filter_id, snapshot_depth = 0, "", 0
+            tracked_found_ids = []
             limit_behavior = "not_verified"
             error = f"{type(exc).__name__}: {exc}"
         status_row = {
