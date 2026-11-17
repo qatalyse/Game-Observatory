@@ -78,7 +78,7 @@ class AppleCollectorTests(unittest.TestCase):
         self.assertEqual(len(calls), 4)
         self.assertEqual(len(statuses), 4)
         self.assertEqual(len(rows), 8)
-        self.assertEqual({s["status"] for s in statuses}, {"partial"})
+        self.assertEqual({s["status"] for s in statuses}, {"partial", "ok"})
         self.assertEqual({s["http_status"] for s in statuses}, {200})
         self.assertEqual({r["feed_type"] for r in rows}, set(CHARTS.values()))
         self.assertEqual(
