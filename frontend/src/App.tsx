@@ -11,7 +11,7 @@ type ChartStatus = {
   http_status: number | null; error: string; feed_fields: string;
   entry_fields: string; source_url: string;
 };
-type Collection = { feed_type: string; genre: string; rankings: Ranking[]; statuses: ChartStatus[]; request_count: number };
+type Collection = { feed_type: string; genre: string; rankings: Ranking[]; statuses: ChartStatus[]; request_count: number; tracked_app_ids_selected?: string[] | null };
 
 function downloadCsv(name: string, rows: Ranking[]) {
   const fields = ["position", "position_semantics", "app_id", "title", "developer", "release_date", "store_url", "artwork_url", "price_amount", "price_currency", "category_id", "category_label"];
@@ -27,6 +27,8 @@ function AppleDevCollection() {
   const [token, setToken] = useState("");
   const [feedType, setFeedType] = useState("top-grossing");
   const [genre, setGenre] = useState("games");
+  const [trackedAppIds, setTrackedAppIds] = useState<string[]>(["1517783697", "1599719154", "1606356401"]);
+  const [customAppId, setCustomAppId] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Collection | null>(null);
   const [error, setError] = useState("");
@@ -35,7 +37,7 @@ function AppleDevCollection() {
     try {
       const response = await fetch("/api/dev/apple-collect", {
         method: "POST", headers: { "X-Dev-Token": token, "Content-Type": "application/json" },
-        body: JSON.stringify({ feed_type: feedType, genre }),
+        body: JSON.stringify({ feed_type: feedType, genre, tracked_app_ids: trackedAppIds }),
       });
       const responseText = await response.text();
       let body: Record<string, unknown>;
@@ -62,6 +64,35 @@ function AppleDevCollection() {
           <label>Feed type<select value={feedType} onChange={event => setFeedType(event.target.value)}><option value="top-grossing">Top Grossing (topgrossingapplications)</option><option value="new-applications">New Applications (newapplications)</option></select></label>
           <label>Category<select value={genre} onChange={event => setGenre(event.target.value)}><option value="games">Games</option><option value="adventure">Adventure</option><option value="role-playing">Role-Playing</option><option value="simulation">Simulation</option><option value="strategy">Strategy</option><option value="casual">Casual</option></select></label>
         </div>
+        <fieldset className="tracked-games-control">
+          <legend>Tracked games for snapshot calculation</legend>
+          <p className="dev-note">Select which App Store IDs count as tracked titles. This selection applies to this diagnostic request only.</p>
+          {[
+            { id: "1517783697", name: "Genshin Impact" },
+            { id: "1599719154", name: "Honkai: Star Rail" },
+            { id: "1606356401", name: "Zenless Zone Zero" },
+          ].map(game => <label key={game.id} className="tracked-game-option">
+            <input type="checkbox" checked={trackedAppIds.includes(game.id)}
+              onChange={event => setTrackedAppIds(current => event.target.checked
+                ? [...current, game.id] : current.filter(id => id !== game.id))} />
+            <span>{game.name} <small>ID {game.id}</small></span>
+          </label>)}
+          <label className="tracked-custom-label">Add another Apple App ID
+            <div className="tracked-custom-row">
+              <input inputMode="numeric" pattern="[0-9]*" value={customAppId}
+                onChange={event => setCustomAppId(event.target.value.replace(/\\D/g, "").slice(0, 20))}
+                placeholder="Numeric App Store ID" />
+              <button type="button" disabled={!customAppId || trackedAppIds.includes(customAppId)}
+                onClick={() => { setTrackedAppIds(current => [...current, customAppId]); setCustomAppId(""); }}>Add</button>
+            </div>
+          </label>
+          {trackedAppIds.filter(id => !["1517783697","1599719154","1606356401"].includes(id)).map(id =>
+            <label key={id} className="tracked-game-option">
+              <input type="checkbox" checked onChange={() => setTrackedAppIds(current => current.filter(value => value !== id))} />
+              <span>Custom App ID <small>{id}</small></span>
+            </label>)}
+          <p className="dev-note">{trackedAppIds.length} tracked ID(s) selected. {trackedAppIds.length === 0 ? "No tracked titles selected: Top 10 fallback will be used for a complete Top 50 chart." : "The lowest-ranked selected title determines snapshot depth."}</p>
+        </fieldset>
         <button className="dev-run" type="button" disabled={!token || loading} onClick={run}>{loading ? "Testing feed…" : "Run Selected Feed Test"}</button>
         {error && <p className="dev-error" role="alert">{error}</p>}
         {result && <div className="dev-results">
