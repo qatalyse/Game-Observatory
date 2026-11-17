@@ -1,0 +1,31 @@
+name: Database SQL static checks
+
+on:
+  push:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/schema-check.yml'
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/schema-check.yml'
+
+jobs:
+  basic-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check migration names and non-empty SQL files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f supabase/tests/001_schema_smoke.sql
+          count=$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l)
+          test "$count" -ge 4
+          for file in supabase/migrations/*.sql; do
+            test -s "$file"
+            grep -q '^BEGIN;' "$file"
+            grep -q '^COMMIT;' "$file"
+          done
+      # Database integration tests require local Supabase/Postgres and are
+      # intentionally not claimed as executed by this static workflow.
