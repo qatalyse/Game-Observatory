@@ -1,0 +1,13 @@
+# Local and generated data
+.env
+.env.*
+!.env.example
+.supabase/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+node_modules/
+dist/
+*.csv
+*.parquet
+!tests/fixtures/*.csv
