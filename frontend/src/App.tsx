@@ -23,6 +23,29 @@ function downloadCsv(name: string, rows: Ranking[]) {
   link.click(); link.remove(); URL.revokeObjectURL(url);
 }
 
+function TableauDashboard() {
+  return (
+    <section className="panel tableau-panel" aria-label="Tableau Public dashboard">
+      <div className="panel-heading">
+        <div>
+          <h2>Apple Top Grossing - Adventure</h2>
+          <p>Game Market Data Analytics - Tableau Public</p>
+        </div>
+        <a className="apple-store-link" href="https://public.tableau.com/views/GameMarketDataanalytics/Sheet1" target="_blank" rel="noreferrer">Open in Tableau Public</a>
+      </div>
+      <div style={{ background: "#111827", borderRadius: "12px", padding: "12px", overflow: "hidden" }}>
+        <iframe
+          title="Game Observatory - Apple Top Grossing Adventure Rankings"
+          src="https://public.tableau.com/views/GameMarketDataanalytics/Sheet1?:showVizHome=no&:embed=yes&:toolbar=yes"
+          loading="lazy"
+          allowFullScreen
+          style={{ display: "block", width: "100%", height: "min(78vh, 820px)", minHeight: "560px", border: 0, background: "#111827" }}
+        />
+      </div>
+      <p className="dev-note">Tableau controls and chart colors are managed by Tableau Public; the surrounding panel follows Game Observatory's dark theme.</p>
+    </section>
+  );
+}
 function AppleDevCollection() {
   const [token, setToken] = useState("");
   const [feedType, setFeedType] = useState("top-grossing");
@@ -190,7 +213,6 @@ const panels: Record<Section, PanelInfo[]> = {
   ],
   "SQL Analysis": [
     { title: "SQL case studies", description: "Analytical questions, PostgreSQL queries, and findings.", emptyLabel: "Case studies will appear after data validation" },
-    { title: "Tableau visualizations", description: "Public dashboards based on curated SQL results.", emptyLabel: "Tableau dashboards not published yet" },
   ],
 };
 
@@ -259,6 +281,7 @@ export default function App() {
         </div>
 
         {activeSection === "Apple Markets" && <AppleDevCollection />}
+        {activeSection === "SQL Analysis" && <TableauDashboard />}
 
         <div className="panel-grid">
           {panels[activeSection].map((panel) => (
