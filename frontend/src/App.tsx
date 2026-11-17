@@ -79,6 +79,8 @@ function AppleDevCollection() {
             <span>HTTP {status.http_status ?? "—"} · {status.returned_count} shown</span>
             {status.source_count > status.returned_count && <span>{status.source_count} source entries</span>}
             {status.category_filter_id && <span>Filtered to Games (6014)</span>}
+            {status.source_count > status.returned_count && <span>{status.source_count} source entries</span>}
+            {status.category_filter_id && <span>Filtered to Games (6014)</span>}
             {status.error && <span className="dev-error">{status.error}</span>}
           </div>)}
           <div className="dev-actions">

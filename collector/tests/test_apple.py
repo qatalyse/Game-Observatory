@@ -127,6 +127,25 @@ class AppleCollectorTests(unittest.TestCase):
         self.assertEqual(statuses[0]["status"], "error")
         self.assertIn("exceeding requested depth", statuses[0]["error"])
 
+
+    def test_new_applications_games_filter_excludes_other_categories(self):
+        ids = tuple(str(3000 + i) for i in range(5))
+        def mixed_payload(url):
+            result = payload(ids, category_id="6014")
+            result["feed"]["entry"][1]["category"]["attributes"] = {"im:id": "6013", "label": "Entertainment"}
+            result["feed"]["entry"][3]["category"]["attributes"] = {"im:id": "6013", "label": "Entertainment"}
+            return result, 200
+        rows, statuses = collect(
+            countries=("SG",), genres=("games",),
+            feed_types=("new-applications",), depth=20,
+            fetch=mixed_payload,
+        )
+        self.assertEqual([row["app_id"] for row in rows], ["3000", "3002", "3004"])
+        self.assertEqual([row["position"] for row in rows], [1, 3, 5])
+        self.assertEqual(statuses[0]["source_count"], 5)
+        self.assertEqual(statuses[0]["returned_count"], 3)
+        self.assertEqual(statuses[0]["category_filter_id"], 6014)
+
     def test_csv_files_have_headers(self):
         with tempfile.TemporaryDirectory() as directory:
             file = Path(directory) / "sample.csv"

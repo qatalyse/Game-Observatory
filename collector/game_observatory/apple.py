@@ -42,8 +42,8 @@ FIELDS = (
 STATUS_FIELDS = (
     "snapshot_id", "retrieved_at_utc", "country", "feed_type", "genre",
     "genre_id", "requested_depth", "returned_count", "http_status",
-    "status", "limit_behavior", "error", "feed_updated_at", "feed_fields", "entry_fields",
-    "source_url",
+    "status", "limit_behavior", "source_count", "category_filter_id", "error",
+    "feed_updated_at", "feed_fields", "entry_fields", "source_url",
 )
 SOURCE = "apple_legacy_itunes_rss"
 
@@ -213,9 +213,18 @@ def collect(
             else:
                 payload = fetched
             entries, feed_meta = parse_entries(payload, depth, feed_type)
+            source_count = len(entries)
+            category_filter_id = GENRES["games"] if feed_type == "new-applications" and genre == "games" else ""
+            if category_filter_id:
+                # The legacy New Applications URL may ignore its genre parameter.
+                # Filter using each entry's own RSS category metadata instead.
+                entries = [
+                    entry for entry in entries
+                    if str(entry.get("category_id", "")) == str(category_filter_id)
+                ]
             if feed_type == "new-applications":
                 status = "ok" if entries else "empty"
-                limit_behavior = "exceeded_but_accepted" if len(entries) > depth else "feed_order_returned"
+                limit_behavior = "exceeded_but_accepted" if source_count > depth else "feed_order_returned"
             else:
                 status = "ok" if len(entries) == depth else ("partial" if entries else "empty")
                 limit_behavior = "requested_limit_respected"
@@ -234,7 +243,8 @@ def collect(
             limit_behavior = "not_verified"
             error = f"{type(exc).__name__}: {exc}"
         status_row = {
-            **base, "returned_count": len(entries), "http_status": http_status,
+            **base, "returned_count": len(entries), "source_count": source_count,
+            "category_filter_id": category_filter_id, "http_status": http_status,
             "status": status, "limit_behavior": limit_behavior,
             "error": error, **feed_meta, "source_url": url,
         }
