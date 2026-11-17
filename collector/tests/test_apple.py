@@ -211,6 +211,33 @@ class AppleCollectorTests(unittest.TestCase):
         self.assertEqual(statuses[0]["status"], "partial")
         self.assertEqual(statuses[0]["limit_behavior"], "incomplete_chart_not_snapshotted")
 
+
+    def test_empty_tracked_selection_uses_top_10_fallback(self):
+        def fake_fetch(url):
+            return payload(tuple(str(15000 + i) for i in range(50)), category_id="7014"), 200
+        rows, statuses = collect(
+            countries=("SG",), genres=("role-playing",),
+            feed_types=("top-grossing",), depth=50,
+            tracked_app_ids=set(), fetch=fake_fetch,
+        )
+        self.assertEqual(len(rows), 10)
+        self.assertEqual(statuses[0]["status"], "fallback_top_10")
+        self.assertEqual(statuses[0]["tracked_app_ids_found"], "")
+
+    def test_custom_tracked_id_is_used_for_snapshot(self):
+        def fake_fetch(url):
+            ids = [str(16000 + i) for i in range(50)]
+            ids[14] = "9876543210"
+            return payload(tuple(ids), category_id="7014"), 200
+        rows, statuses = collect(
+            countries=("SG",), genres=("role-playing",),
+            feed_types=("top-grossing",), depth=50,
+            tracked_app_ids={"9876543210"}, fetch=fake_fetch,
+        )
+        self.assertEqual(statuses[0]["snapshot_depth"], 20)
+        self.assertEqual(statuses[0]["tracked_app_ids_found"], "9876543210")
+        self.assertEqual(len(rows), 20)
+
     def test_csv_files_have_headers(self):
         with tempfile.TemporaryDirectory() as directory:
             file = Path(directory) / "sample.csv"
