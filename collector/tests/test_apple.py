@@ -10,7 +10,7 @@ from game_observatory.apple import (
 )
 
 
-def payload(ids=("123", "456")):
+def payload(ids=("123", "456"), category_id="6014"):
     entries = []
     for app_id in ids:
         entries.append({
@@ -24,7 +24,7 @@ def payload(ids=("123", "456")):
             ],
             "im:price": {"label": "Free", "attributes": {"amount": "0.00", "currency": "SGD"}},
             "summary": {"label": "Sample game description"},
-            "category": {"attributes": {"im:id": "7014", "label": "Role Playing"}},
+            "category": {"attributes": {"im:id": category_id, "label": "Games" if category_id == "6014" else "Role Playing"}},
             "im:contentType": {"label": "Application"},
             "im:rating": {"label": "12+"},
             "rights": {"label": "Copyright Studio"},
