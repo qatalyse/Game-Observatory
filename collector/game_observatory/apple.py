@@ -26,8 +26,6 @@ GENRES = {
     "simulation": 7015,
     "strategy": 7017,
     "casual": 7003,
-    "strategy": 7017,
-    "casual": 7003,
     "action": 7001,
     "strategy": 7017,
 }
