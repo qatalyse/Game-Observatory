@@ -100,3 +100,7 @@ button { font: inherit; }
 .dev-raw-fields { display:grid; gap:5px; padding:10px 12px; background:#101923; border:1px solid #344354; border-radius:5px; overflow-wrap:anywhere; }
 .dev-raw-fields strong { color:#80e12d; font-size:.78rem; }
 .dev-raw-fields small { color:#91a1af; font-size:.72rem; line-height:1.5; }
+
+.dev-select-row { display:flex; gap:14px; flex-wrap:wrap; width:min(100%,650px); }
+.dev-select-row label { display:grid; gap:6px; flex:1; min-width:210px; }
+.dev-select-row select { padding:10px; color:#dce4e9; background:#0b1018; border:1px solid #405263; border-radius:5px; }

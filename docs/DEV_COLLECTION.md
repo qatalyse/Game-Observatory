@@ -1,43 +1,22 @@
 # Manual Apple legacy RSS diagnostics on Vercel
 
-## Purpose
+The Apple Markets developer panel now tests exactly one selected feed/category
+per invocation. This isolates unsupported endpoints and avoids oversized
+responses or long batches.
 
-Temporary, token-protected developer test for Singapore Top 20:
-- `topgrossingapplications`
-- `newapplications`
+1. Set `DEV_COLLECT_TOKEN` in the Vercel environment and redeploy.
+2. Open Apple Markets, enter the token.
+3. Select Top Grossing or New Applications and one category.
+4. Click Run Selected Feed Test.
+5. Inspect the returned count, HTTP status, feed fields and entry fields.
+6. Download the compact result CSV if useful.
 
-Both feed types are tested against Games (6014), Adventure (7002),
-Role-Playing (7014), Action (7001), and Strategy (7017). One button click
-makes ten upstream requests. The status response includes HTTP status,
-entry count, parser status, feed-level fields and the first entry's fields.
+Allowed test scope: Singapore, depth 20, two legacy feed identifiers and
+Games/Adventure/Role-Playing/Action/Strategy category filters. One upstream
+request per click. The collector rejects upstream JSON bodies larger than 2 MB
+and returns only compact metadata to the browser.
 
-## Enable
-
-1. Set `DEV_COLLECT_TOKEN` in Vercel for the environment being tested.
-2. Redeploy after changing the variable.
-3. Open Apple Markets, enter the token and click Run Collection.
-4. Review all ten feed/genre combinations and download both CSV files.
-
-Never commit or share the token.
-
-## Interpret results
-
-- `ok`: exactly the requested depth was returned.
-- `partial`: fewer than requested but at least one entry returned.
-- `empty`: no entries returned.
-- `error`: HTTP, transport, or parsing failure.
-
-A 200 response alone does not validate that the requested semantic is correct.
-For `newapplications`, `position` is feed order, not a verified chart rank
-or release-date order. Inspect actual release dates and field coverage before
-interpreting the list as a chronological new-release catalog.
-
-## Limitations
-
-- Singapore only; Top 20.
-- No storage, database writes, Google Sheets writes, Tableau publication,
-  cron schedule or automatic collection.
-- Ten requests per click; token authentication is not a full rate limiter.
-- Feeds are legacy iTunes RSS endpoints; this diagnostic does not establish
-  that Apple currently documents or guarantees them.
-- Results exist only in the response/browser until the user downloads CSV.
+New Applications feed order is not assumed to be ranking or date order.
+These are legacy Apple-hosted endpoints; successful requests do not establish
+official documentation or long-term support. No persistent storage, Tableau
+publication or scheduled jobs are enabled.

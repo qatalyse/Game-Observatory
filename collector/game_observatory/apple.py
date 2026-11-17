@@ -67,7 +67,10 @@ def feed_url(country: str, genre: str, depth: int = DEFAULT_DEPTH, feed_type: st
 def fetch_json(url: str, timeout: float = 8) -> tuple[dict, int]:
     request = Request(url, headers={"User-Agent": "GameObservatory/0.2"})
     with urlopen(request, timeout=timeout) as response:
-        return json.load(response), response.status
+        raw = response.read(2_000_001)
+        if len(raw) > 2_000_000:
+            raise ValueError("Apple response exceeded 2 MB diagnostic safety limit")
+        return json.loads(raw.decode("utf-8")), response.status
 
 
 def _label(field: object) -> str:
