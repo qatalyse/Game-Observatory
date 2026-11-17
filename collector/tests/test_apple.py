@@ -51,6 +51,12 @@ class AppleCollectorTests(unittest.TestCase):
             "https://itunes.apple.com/sg/rss/newapplications/limit=20/genre=7014/json",
         )
 
+    def test_all_ten_market_codes_are_supported(self):
+        expected = {"SG","US","JP","KR","CN","MY","TH","ID","PH","VN"}
+        self.assertEqual(set(MARKETS), expected)
+        for country in expected:
+            self.assertIn(f"/{country.lower()}/", feed_url(country, "casual", 50, "top-grossing"))
+
     def test_extracts_legacy_metadata_fields(self):
         grossing, meta = parse_entries(payload(category_id="7014"), 20, "top-grossing")
         new_apps, _ = parse_entries(payload(category_id="7014"), 20, "new-applications")
