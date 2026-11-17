@@ -24,6 +24,8 @@ GENRES = {
     "adventure": 7002,
     "role-playing": 7014,
     "simulation": 7015,
+    "strategy": 7017,
+    "casual": 7003,
     "action": 7001,
     "strategy": 7017,
 }
