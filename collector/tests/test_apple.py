@@ -36,6 +36,7 @@ def payload(ids=("123", "456"), category_id="6014"):
 class AppleCollectorTests(unittest.TestCase):
     def test_all_markets_and_both_feed_types(self):
         self.assertEqual(len(MARKETS), 10)
+        self.assertEqual(GENRES["simulation"], 7015)
         self.assertEqual(set(CHARTS), {"top-grossing", "new-applications"})
         self.assertEqual(
             feed_url("SG", "games", 20, "top-grossing"),
@@ -186,9 +187,12 @@ class AppleCollectorTests(unittest.TestCase):
             feed_types=("top-grossing",), depth=50,
             tracked_app_ids={"6776621908"}, fetch=fake_fetch,
         )
-        self.assertEqual(rows, [])
-        self.assertEqual(statuses[0]["status"], "no_tracked_titles")
-        self.assertEqual(statuses[0]["snapshot_depth"], 0)
+        self.assertEqual(len(rows), 10)
+        self.assertEqual([r["position"] for r in rows], list(range(1, 11)))
+        self.assertEqual(statuses[0]["status"], "fallback_top_10")
+        self.assertEqual(statuses[0]["limit_behavior"], "no_tracked_title_fallback_top_10")
+        self.assertEqual(statuses[0]["snapshot_depth"], 10)
+        self.assertEqual(statuses[0]["tracked_app_ids_found"], "")
         self.assertEqual(statuses[0]["source_count"], 50)
 
     def test_incomplete_chart_is_not_treated_as_no_tracked_title(self):
