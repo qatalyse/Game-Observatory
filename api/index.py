@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import secrets
 import sys
+import traceback
 from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "collector"))
@@ -36,6 +37,16 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def do_GET(self):
+        if self.path.split("?")[0] not in ("/api/dev/apple-collect", "/api/index.py"):
+            return self.respond(404, {"error": "Not found"})
+        self.respond(200, {
+            "status": "function_ready",
+            "token_configured": bool(os.getenv("DEV_COLLECT_TOKEN")),
+            "feed_types": list(TEST_FEEDS),
+            "genres": list(TEST_GENRES),
+        })
+
     def do_POST(self):
         if self.path.split("?")[0] not in ("/api/dev/apple-collect", "/api/index.py"):
             return self.respond(404, {"error": "Not found"})
@@ -50,8 +61,9 @@ class handler(BaseHTTPRequestHandler):
                 countries=("SG",), genres=TEST_GENRES,
                 feed_types=TEST_FEEDS, depth=20, pause_seconds=0.1,
             )
-        except Exception:
-            return self.respond(502, {"error": "Collection failed unexpectedly"})
+        except Exception as exc:
+            traceback.print_exc()
+            return self.respond(502, {"error": f"Collection failed: {type(exc).__name__}"})
         self.respond(200, {
             "rankings": rows,
             "statuses": statuses,

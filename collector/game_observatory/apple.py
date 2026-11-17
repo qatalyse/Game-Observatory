@@ -6,6 +6,7 @@ represented as a currently documented Apple Marketing Tools API.
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import csv
 from datetime import datetime, timezone
 import json
@@ -63,7 +64,7 @@ def feed_url(country: str, genre: str, depth: int = DEFAULT_DEPTH, feed_type: st
     )
 
 
-def fetch_json(url: str, timeout: float = 15) -> tuple[dict, int]:
+def fetch_json(url: str, timeout: float = 8) -> tuple[dict, int]:
     request = Request(url, headers={"User-Agent": "GameObservatory/0.2"})
     with urlopen(request, timeout=timeout) as response:
         return json.load(response), response.status
@@ -181,48 +182,57 @@ def collect(
     clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
     pause_seconds: float = 0,
 ) -> tuple[list[dict], list[dict]]:
+    """Collect a bounded batch concurrently; preserve request order in outputs."""
+    requests = [(country, feed_type, genre) for country in countries
+                for feed_type in feed_types for genre in genres]
+
+    def collect_one(request_spec):
+        country, feed_type, genre = request_spec
+        url = feed_url(country, genre, depth, feed_type)
+        stamp = clock().astimezone(timezone.utc).isoformat()
+        snapshot_id = uuid4().hex
+        base = {
+            "snapshot_id": snapshot_id, "retrieved_at_utc": stamp,
+            "country": country, "store": "ios", "feed_type": CHARTS[feed_type],
+            "genre": genre, "genre_id": GENRES[genre],
+            "requested_depth": depth, "source": SOURCE,
+        }
+        http_status = None
+        feed_meta = {"feed_updated_at": "", "feed_fields": "", "entry_fields": ""}
+        try:
+            if pause_seconds:
+                time.sleep(pause_seconds)
+            fetched = fetch(url)
+            if isinstance(fetched, tuple) and len(fetched) == 2:
+                payload, http_status = fetched
+            else:
+                payload = fetched
+            entries, feed_meta = parse_entries(payload, depth, feed_type)
+            status = "ok" if len(entries) == depth else ("partial" if entries else "empty")
+            rows = [{**base, **entry, "feed_updated_at": feed_meta["feed_updated_at"]}
+                    for entry in entries]
+            error = ""
+        except HTTPError as exc:
+            http_status = exc.code
+            rows, entries, status = [], [], "error"
+            error = f"HTTPError: HTTP {exc.code}"
+        except (ValueError, KeyError, TypeError, URLError, OSError, TimeoutError, json.JSONDecodeError) as exc:
+            rows, entries, status = [], [], "error"
+            error = f"{type(exc).__name__}: {exc}"
+        status_row = {
+            **base, "returned_count": len(entries), "http_status": http_status,
+            "status": status, "error": error, **feed_meta, "source_url": url,
+        }
+        return rows, status_row
+
     observations: list[dict] = []
     statuses: list[dict] = []
-    for country in countries:
-        for feed_type in feed_types:
-            for genre in genres:
-                url = feed_url(country, genre, depth, feed_type)
-                stamp = clock().astimezone(timezone.utc).isoformat()
-                snapshot_id = uuid4().hex
-                base = {
-                    "snapshot_id": snapshot_id, "retrieved_at_utc": stamp,
-                    "country": country, "store": "ios", "feed_type": CHARTS[feed_type],
-                    "genre": genre, "genre_id": GENRES[genre],
-                    "requested_depth": depth, "source": SOURCE,
-                }
-                http_status = None
-                feed_meta = {"feed_updated_at": "", "feed_fields": "", "entry_fields": ""}
-                try:
-                    fetched = fetch(url)
-                    if isinstance(fetched, tuple) and len(fetched) == 2:
-                        payload, http_status = fetched
-                    else:
-                        payload = fetched
-                    entries, feed_meta = parse_entries(payload, depth, feed_type)
-                    status = "ok" if len(entries) == depth else ("partial" if entries else "empty")
-                    for entry in entries:
-                        observations.append({**base, **entry, **{"feed_updated_at": feed_meta["feed_updated_at"]}})
-                    error = ""
-                except HTTPError as exc:
-                    http_status = exc.code
-                    entries = []
-                    status = "error"
-                    error = f"HTTPError: HTTP {exc.code}"
-                except (ValueError, KeyError, TypeError, URLError, OSError, TimeoutError, json.JSONDecodeError) as exc:
-                    entries = []
-                    status = "error"
-                    error = f"{type(exc).__name__}: {exc}"
-                statuses.append({
-                    **base, "returned_count": len(entries), "http_status": http_status,
-                    "status": status, "error": error, **feed_meta, "source_url": url,
-                })
-                if pause_seconds:
-                    time.sleep(pause_seconds)
+    # Three concurrent connections bound total duration while avoiding a burst
+    # of ten simultaneous requests to Apple's legacy feed host.
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        for rows, status_row in pool.map(collect_one, requests):
+            observations.extend(rows)
+            statuses.append(status_row)
     return observations, statuses
 
 

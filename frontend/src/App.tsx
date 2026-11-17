@@ -32,9 +32,16 @@ function AppleDevCollection() {
     setLoading(true); setError(""); setResult(null);
     try {
       const response = await fetch("/api/dev/apple-collect", { method: "POST", headers: { "X-Dev-Token": token } });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || `Collection failed (${response.status})`);
-      setResult(body as Collection);
+      const responseText = await response.text();
+      let body: Record<string, unknown>;
+      try {
+        body = JSON.parse(responseText) as Record<string, unknown>;
+      } catch {
+        const detail = responseText.trim().slice(0, 240) || "Empty response";
+        throw new Error(`Vercel returned a non-JSON response (HTTP ${response.status}): ${detail}`);
+      }
+      if (!response.ok) throw new Error(String(body.error || `Collection failed (${response.status})`));
+      setResult(body as unknown as Collection);
     } catch (err) { setError(err instanceof Error ? err.message : "Collection failed"); }
     finally { setLoading(false); }
   }
