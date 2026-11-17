@@ -66,7 +66,7 @@ class handler(BaseHTTPRequestHandler):
         try:
             rows, statuses = collect(
                 countries=("SG",), genres=(genre,),
-                feed_types=(feed_type,), depth=20,
+                feed_types=(feed_type,), depth=50 if feed_type == "top-grossing" else 20,
             )
         except Exception as exc:
             traceback.print_exc()
@@ -79,4 +79,5 @@ class handler(BaseHTTPRequestHandler):
             "rankings": compact_rows,
             "statuses": statuses,
             "request_count": 1,
+            "snapshot_policy": "rounded_tens_plus_five_on_exact_tens" if feed_type == "top-grossing" else "all_new_applications",
         })
