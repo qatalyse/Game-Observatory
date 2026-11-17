@@ -16,7 +16,11 @@ Games/Adventure/Role-Playing/Action/Strategy category filters. One upstream
 request per click. The collector rejects upstream JSON bodies larger than 2 MB
 and returns only compact metadata to the browser.
 
-New Applications feed order is not assumed to be ranking or date order.
+Top Grossing enforces the requested Top 20 depth. New Applications accepts
+all entries returned by Apple even when the legacy endpoint exceeds the
+requested limit (the observed Singapore response returned 104). Its position
+is feed order only, not a verified rank or date ordering. The status records
+when more entries than requested were accepted.
 These are legacy Apple-hosted endpoints; successful requests do not establish
 official documentation or long-term support. No persistent storage, Tableau
 publication or scheduled jobs are enabled.

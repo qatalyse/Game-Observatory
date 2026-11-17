@@ -42,7 +42,7 @@ FIELDS = (
 STATUS_FIELDS = (
     "snapshot_id", "retrieved_at_utc", "country", "feed_type", "genre",
     "genre_id", "requested_depth", "returned_count", "http_status",
-    "status", "error", "feed_updated_at", "feed_fields", "entry_fields",
+    "status", "limit_behavior", "error", "feed_updated_at", "feed_fields", "entry_fields",
     "source_url",
 )
 SOURCE = "apple_legacy_itunes_rss"
@@ -120,7 +120,9 @@ def parse_entries(payload: dict, depth: int, feed_type: str) -> tuple[list[dict]
         raw = [raw]
     if not isinstance(raw, list):
         raise ValueError("Invalid Apple RSS entry list")
-    if len(raw) > depth:
+    # New Applications may ignore the requested limit; retain every returned entry.
+    # Top Grossing remains a strictly limited chart.
+    if feed_type == "top-grossing" and len(raw) > depth:
         raise ValueError(f"Feed returned {len(raw)} entries, exceeding requested depth {depth}")
 
     feed_meta = {
@@ -211,20 +213,28 @@ def collect(
             else:
                 payload = fetched
             entries, feed_meta = parse_entries(payload, depth, feed_type)
-            status = "ok" if len(entries) == depth else ("partial" if entries else "empty")
+            if feed_type == "new-applications":
+                status = "ok" if entries else "empty"
+                limit_behavior = "exceeded_but_accepted" if len(entries) > depth else "feed_order_returned"
+            else:
+                status = "ok" if len(entries) == depth else ("partial" if entries else "empty")
+                limit_behavior = "requested_limit_respected"
             rows = [{**base, **entry, "feed_updated_at": feed_meta["feed_updated_at"]}
                     for entry in entries]
             error = ""
         except HTTPError as exc:
             http_status = exc.code
             rows, entries, status = [], [], "error"
+            limit_behavior = "not_verified"
             error = f"HTTPError: HTTP {exc.code}"
         except (ValueError, KeyError, TypeError, URLError, OSError, TimeoutError, json.JSONDecodeError) as exc:
             rows, entries, status = [], [], "error"
+            limit_behavior = "not_verified"
             error = f"{type(exc).__name__}: {exc}"
         status_row = {
             **base, "returned_count": len(entries), "http_status": http_status,
-            "status": status, "error": error, **feed_meta, "source_url": url,
+            "status": status, "limit_behavior": limit_behavior,
+            "error": error, **feed_meta, "source_url": url,
         }
         return rows, status_row
 

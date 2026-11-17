@@ -64,6 +64,8 @@ class AppleCollectorTests(unittest.TestCase):
             parse_entries({"feed": {"entry": [{"im:name": {"label": "Bad"}}]}}, 20, "new-applications")
         with self.assertRaises(ValueError):
             parse_entries(payload(), 1, "top-grossing")
+        accepted, _ = parse_entries(payload(), 1, "new-applications")
+        self.assertEqual(len(accepted), 2)
 
     def test_collects_two_feeds_and_multiple_genres(self):
         calls = []
@@ -97,6 +99,33 @@ class AppleCollectorTests(unittest.TestCase):
         self.assertEqual(len(rows), 2)
         self.assertEqual([s["status"] for s in statuses], ["partial", "error"])
         self.assertTrue(all(r["retrieved_at_utc"] == "2026-11-17T00:00:00+00:00" for r in rows))
+
+
+    def test_new_applications_accepts_all_entries_above_requested_limit(self):
+        ids = tuple(str(1000 + i) for i in range(104))
+        fixed = lambda: datetime(2026, 11, 18, tzinfo=timezone.utc)
+        rows, statuses = collect(
+            countries=("SG",), genres=("games",),
+            feed_types=("new-applications",), depth=20,
+            fetch=lambda url: (payload(ids), 200), clock=fixed,
+        )
+        self.assertEqual(len(rows), 104)
+        self.assertEqual(statuses[0]["returned_count"], 104)
+        self.assertEqual(statuses[0]["status"], "ok")
+        self.assertEqual(statuses[0]["limit_behavior"], "exceeded_but_accepted")
+        self.assertEqual(rows[-1]["position"], 104)
+        self.assertEqual(rows[0]["position_semantics"], "feed_order_not_verified_as_rank")
+
+    def test_top_grossing_remains_strict_at_requested_depth(self):
+        ids = tuple(str(2000 + i) for i in range(21))
+        rows, statuses = collect(
+            countries=("SG",), genres=("games",),
+            feed_types=("top-grossing",), depth=20,
+            fetch=lambda url: (payload(ids), 200),
+        )
+        self.assertEqual(rows, [])
+        self.assertEqual(statuses[0]["status"], "error")
+        self.assertIn("exceeding requested depth", statuses[0]["error"])
 
     def test_csv_files_have_headers(self):
         with tempfile.TemporaryDirectory() as directory:

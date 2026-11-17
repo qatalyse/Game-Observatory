@@ -34,6 +34,12 @@ Top Grossing is a chart rank. Position in New Applications is only feed order;
 we do not assume the list is sorted by release date or that the order measures
 popularity. Release date is captured separately if present.
 
+Top Grossing strictly validates the requested depth. New Applications is a
+discovery feed and may ignore the requested limit: all returned entries are
+accepted (the observed Singapore response returned 104 entries for limit=20).
+The status row records when the requested limit was exceeded but accepted.
+This does not establish that the feed is a complete catalogue of new games.
+
 The collector extracts common legacy fields where present: app ID, name,
 developer and developer URL, release date, store link, artwork, description,
 price/currency, category ID/label, content type, content rating, copyright,

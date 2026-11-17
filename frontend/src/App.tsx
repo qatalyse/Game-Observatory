@@ -68,7 +68,7 @@ function AppleDevCollection() {
             <div>
               <span className="apple-eyebrow">SINGAPORE APP STORE</span>
               <h3>{result.feed_type === "topgrossingapplications" ? "Top Grossing Games" : "New Applications"}</h3>
-              <p>{result.genre.replace("-", " ")} · Top 20 requested · {result.rankings.length} entries returned</p>
+              <p>{result.genre.replace("-", " ")} · {result.feed_type === "newapplications" ? "20 requested; feed may return more" : "Top 20 chart"} · {result.rankings.length} entries returned</p>
             </div>
             <div className="apple-result-count"><strong>{result.rankings.length}</strong><span>apps returned</span></div>
           </div>
