@@ -58,8 +58,16 @@ class handler(BaseHTTPRequestHandler):
             options = json.loads(request_data.decode("utf-8"))
             feed_type = options.get("feed_type", "top-grossing")
             genre = options.get("genre", "games")
+            tracked_app_ids = options.get("tracked_app_ids")
             if feed_type not in CHARTS or genre not in GENRES:
                 return self.respond(400, {"error": "Unsupported feed type or genre"})
+            if tracked_app_ids is not None:
+                if not isinstance(tracked_app_ids, list) or len(tracked_app_ids) > 100:
+                    return self.respond(400, {"error": "tracked_app_ids must be a list of at most 100 App Store IDs"})
+                if any(not isinstance(value, str) or not value.isdigit() for value in tracked_app_ids):
+                    return self.respond(400, {"error": "Each tracked App Store ID must contain digits only"})
+                if len(set(tracked_app_ids)) != len(tracked_app_ids):
+                    return self.respond(400, {"error": "Tracked App Store IDs must be unique"})
         except (ValueError, UnicodeDecodeError, AttributeError):
             return self.respond(400, {"error": "Invalid diagnostic request"})
 
@@ -67,6 +75,7 @@ class handler(BaseHTTPRequestHandler):
             rows, statuses = collect(
                 countries=("SG",), genres=(genre,),
                 feed_types=(feed_type,), depth=50 if feed_type == "top-grossing" else 20,
+                tracked_app_ids=set(tracked_app_ids) if tracked_app_ids is not None else None,
             )
         except Exception as exc:
             traceback.print_exc()
@@ -79,5 +88,6 @@ class handler(BaseHTTPRequestHandler):
             "rankings": compact_rows,
             "statuses": statuses,
             "request_count": 1,
+            "tracked_app_ids_selected": tracked_app_ids if tracked_app_ids is not None else None,
             "snapshot_policy": "rounded_tens_plus_five_on_exact_tens" if feed_type == "top-grossing" else "all_new_applications",
         })
