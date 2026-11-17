@@ -29,6 +29,7 @@ function AppleDevCollection() {
   const [genre, setGenre] = useState("games");
   const [trackedAppIds, setTrackedAppIds] = useState<string[]>(["1517783697", "1599719154", "1606356401"]);
   const [customAppId, setCustomAppId] = useState("");
+  const [market, setMarket] = useState("SG");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Collection | null>(null);
   const [error, setError] = useState("");
@@ -37,7 +38,7 @@ function AppleDevCollection() {
     try {
       const response = await fetch("/api/dev/apple-collect", {
         method: "POST", headers: { "X-Dev-Token": token, "Content-Type": "application/json" },
-        body: JSON.stringify({ feed_type: feedType, genre, tracked_app_ids: trackedAppIds }),
+        body: JSON.stringify({ feed_type: feedType, genre, market, tracked_app_ids: trackedAppIds }),
       });
       const responseText = await response.text();
       let body: Record<string, unknown>;
@@ -53,7 +54,7 @@ function AppleDevCollection() {
   return (
     <section className="panel dev-panel" aria-label="Developer Apple RSS diagnostics">
       <div className="panel-heading">
-        <div><h2>Developer · Apple legacy RSS diagnostics</h2><p>Singapore · Top Grossing 50 / New Applications 20 requested</p></div>
+        <div><h2>Developer · Apple legacy RSS diagnostics</h2><p>10 Apple storefronts · Top Grossing 50 / New Applications 20 requested</p></div>
         <span className="panel-status">One request per run</span>
       </div>
       <div className="dev-body">
@@ -61,6 +62,13 @@ function AppleDevCollection() {
         <label htmlFor="dev-token">Dev collection token (configured in Vercel)</label>
         <input id="dev-token" type="password" value={token} onChange={event => setToken(event.target.value)} autoComplete="off" placeholder="Enter token" />
         <div className="dev-select-row">
+          <label>Market<select value={market} onChange={event => setMarket(event.target.value)}>
+            <option value="SG">Singapore</option><option value="US">United States</option>
+            <option value="JP">Japan</option><option value="KR">South Korea</option>
+            <option value="CN">China</option><option value="MY">Malaysia</option>
+            <option value="TH">Thailand</option><option value="ID">Indonesia</option>
+            <option value="PH">Philippines</option><option value="VN">Vietnam</option>
+          </select></label>
           <label>Feed type<select value={feedType} onChange={event => setFeedType(event.target.value)}><option value="top-grossing">Top Grossing (topgrossingapplications)</option><option value="new-applications">New Applications (newapplications)</option></select></label>
           <label>Category<select value={genre} onChange={event => setGenre(event.target.value)}><option value="games">Games</option><option value="adventure">Adventure</option><option value="role-playing">Role-Playing</option><option value="simulation">Simulation</option><option value="strategy">Strategy</option><option value="casual">Casual</option><option value="strategy">Strategy</option><option value="casual">Casual</option></select></label>
         </div>
@@ -98,7 +106,7 @@ function AppleDevCollection() {
         {result && <div className="dev-results">
           <div className="apple-result-overview">
             <div>
-              <span className="apple-eyebrow">SINGAPORE APP STORE</span>
+              <span className="apple-eyebrow">{market} APP STORE</span>
               <h3>{result.feed_type === "topgrossingapplications" ? "Top Grossing Games" : "New Applications"}</h3>
               <p>{result.genre.replace("-", " ")} · {result.feed_type === "newapplications" ? "20 requested; feed may return more" : "Top 50 fetched; snapshot retained"} · {result.rankings.length} entries returned</p>
             </div>
@@ -114,7 +122,7 @@ function AppleDevCollection() {
             {status.error && <span className="dev-error">{status.error}</span>}
           </div>)}
           <div className="dev-actions">
-            <button type="button" disabled={!result.rankings.length} onClick={() => downloadCsv(`apple_sg_${result.feed_type}_${result.genre}.csv`, result.rankings)}>Download CSV</button>
+            <button type="button" disabled={!result.rankings.length} onClick={() => downloadCsv(`apple_${market.toLowerCase()}_${result.feed_type}_${result.genre}.csv`, result.rankings)}>Download CSV</button>
           </div>
           <div className="apple-results-table-wrap">
             <table className="apple-results-table">
