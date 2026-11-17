@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from game_observatory.apple import (
-    CHARTS, FIELDS, GENRES, MARKETS, STATUS_FIELDS, collect, feed_url,
+    CHARTS, FIELDS, GENRES, MARKETS, STATUS_FIELDS, TRACKED_GAME_IDS, collect, feed_url,
     parse_entries, write_csv,
 )
 
@@ -145,6 +145,63 @@ class AppleCollectorTests(unittest.TestCase):
         self.assertEqual(statuses[0]["source_count"], 5)
         self.assertEqual(statuses[0]["returned_count"], 3)
         self.assertEqual(statuses[0]["category_filter_id"], 6014)
+
+
+    def test_dynamic_snapshot_depth_boundaries(self):
+        cases = [(1,10),(9,10),(10,15),(11,20),(20,25),(25,30),(29,30),(30,35),(40,45),(45,50),(50,50)]
+        for rank, expected in cases:
+            with self.subTest(rank=rank):
+                def fake_fetch(url):
+                    ids = [str(10000 + i) for i in range(50)]
+                    ids[rank - 1] = "6776621908"
+                    return payload(tuple(ids), category_id="7014"), 200
+                rows, statuses = collect(
+                    countries=("SG",), genres=("role-playing",),
+                    feed_types=("top-grossing",), depth=50,
+                    tracked_app_ids={"6776621908"}, fetch=fake_fetch,
+                )
+                self.assertEqual(statuses[0]["snapshot_depth"], expected)
+                self.assertEqual(len(rows), expected)
+                self.assertEqual(rows[-1]["position"], expected)
+
+    def test_multiple_tracked_titles_use_lowest_ranked_position(self):
+        def fake_fetch(url):
+            ids = [str(11000 + i) for i in range(50)]
+            ids[24], ids[44] = "6776621908", "6745814650"
+            return payload(tuple(ids), category_id="7014"), 200
+        rows, statuses = collect(
+            countries=("SG",), genres=("adventure",),
+            feed_types=("top-grossing",), depth=50,
+            tracked_app_ids={"6776621908", "6745814650"}, fetch=fake_fetch,
+        )
+        self.assertEqual(statuses[0]["snapshot_depth"], 50)
+        self.assertEqual(statuses[0]["tracked_app_ids_found"], "6776621908,6745814650")
+        self.assertEqual(len(rows), 50)
+
+    def test_no_tracked_title_records_status_without_rankings(self):
+        def fake_fetch(url):
+            return payload(tuple(str(12000 + i) for i in range(50)), category_id="7014"), 200
+        rows, statuses = collect(
+            countries=("SG",), genres=("role-playing",),
+            feed_types=("top-grossing",), depth=50,
+            tracked_app_ids={"6776621908"}, fetch=fake_fetch,
+        )
+        self.assertEqual(rows, [])
+        self.assertEqual(statuses[0]["status"], "no_tracked_titles")
+        self.assertEqual(statuses[0]["snapshot_depth"], 0)
+        self.assertEqual(statuses[0]["source_count"], 50)
+
+    def test_incomplete_chart_is_not_treated_as_no_tracked_title(self):
+        def fake_fetch(url):
+            return payload(tuple(str(13000 + i) for i in range(20)), category_id="7014"), 200
+        rows, statuses = collect(
+            countries=("SG",), genres=("role-playing",),
+            feed_types=("top-grossing",), depth=50,
+            tracked_app_ids={"6776621908"}, fetch=fake_fetch,
+        )
+        self.assertEqual(rows, [])
+        self.assertEqual(statuses[0]["status"], "partial")
+        self.assertEqual(statuses[0]["limit_behavior"], "incomplete_chart_not_snapshotted")
 
     def test_csv_files_have_headers(self):
         with tempfile.TemporaryDirectory() as directory:
