@@ -30,10 +30,12 @@ CHARTS = {
     "top-grossing": "topgrossingapplications",
     "new-applications": "newapplications",
 }
-DEFAULT_DEPTH = 20
+DEFAULT_DEPTH = 50
+SNAPSHOT_BUFFER = 5
+TRACKED_GAME_IDS = {"6776621908", "6745814650"}
 FIELDS = (
     "snapshot_id", "retrieved_at_utc", "country", "store", "feed_type",
-    "genre", "genre_id", "requested_depth", "position", "position_semantics",
+    "genre", "genre_id", "requested_depth", "snapshot_depth", "tracked_app_ids_found", "position", "position_semantics",
     "app_id", "title", "developer", "developer_url", "release_date",
     "store_url", "artwork_url", "description", "price_amount",
     "price_currency", "category_id", "category_label", "content_type",
@@ -41,7 +43,7 @@ FIELDS = (
 )
 STATUS_FIELDS = (
     "snapshot_id", "retrieved_at_utc", "country", "feed_type", "genre",
-    "genre_id", "requested_depth", "returned_count", "http_status",
+    "genre_id", "requested_depth", "source_count", "snapshot_depth", "tracked_app_ids_found", "returned_count", "http_status",
     "status", "limit_behavior", "source_count", "category_filter_id", "error",
     "feed_updated_at", "feed_fields", "entry_fields", "source_url",
 )
@@ -122,8 +124,7 @@ def parse_entries(payload: dict, depth: int, feed_type: str) -> tuple[list[dict]
         raise ValueError("Invalid Apple RSS entry list")
     # New Applications may ignore the requested limit; retain every returned entry.
     # Top Grossing remains a strictly limited chart.
-    if feed_type == "top-grossing" and len(raw) > depth:
-        raise ValueError(f"Feed returned {len(raw)} entries, exceeding requested depth {depth}")
+    # Parse the complete response first; chart retention is applied after tracking.
 
     feed_meta = {
         "feed_updated_at": _label(feed.get("updated")),
@@ -183,11 +184,15 @@ def collect(
     genres: tuple[str, ...] = ("games", "adventure", "role-playing", "action", "strategy"),
     feed_types: tuple[str, ...] = ("top-grossing", "new-applications"),
     depth: int = DEFAULT_DEPTH,
+    tracked_app_ids: set[str] | frozenset[str] | None = None,
     fetch: Callable[[str], object] = fetch_json,
     clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
     pause_seconds: float = 0,
 ) -> tuple[list[dict], list[dict]]:
-    """Collect a bounded batch concurrently; preserve request order in outputs."""
+    """Collect feeds and apply dynamic Top Grossing snapshot retention."""
+    tracked_ids = {str(v) for v in (tracked_app_ids if tracked_app_ids is not None else TRACKED_GAME_IDS)}
+    if not tracked_ids:
+        raise ValueError("At least one tracked App Store ID must be configured")
     requests = [(country, feed_type, genre) for country in countries
                 for feed_type in feed_types for genre in genres]
 
@@ -200,7 +205,7 @@ def collect(
             "snapshot_id": snapshot_id, "retrieved_at_utc": stamp,
             "country": country, "store": "ios", "feed_type": CHARTS[feed_type],
             "genre": genre, "genre_id": GENRES[genre],
-            "requested_depth": depth, "source": SOURCE,
+            "requested_depth": depth, "snapshot_depth": 0, "tracked_app_ids_found": "", "source": SOURCE,
         }
         http_status = None
         feed_meta = {"feed_updated_at": "", "feed_fields": "", "entry_fields": ""}
@@ -216,25 +221,42 @@ def collect(
             source_count = len(entries)
             category_filter_id = GENRES["games"] if feed_type == "new-applications" and genre == "games" else ""
             if category_filter_id:
-                # The legacy New Applications URL may ignore its genre parameter.
-                # Filter using each entry's own RSS category metadata instead.
-                entries = [
-                    entry for entry in entries
-                    if str(entry.get("category_id", "")) == str(category_filter_id)
-                ]
-            if feed_type == "new-applications":
+                entries = [entry for entry in entries if str(entry.get("category_id", "")) == str(category_filter_id)]
+            if feed_type == "top-grossing":
+                if len(entries) < depth:
+                    status = "partial" if entries else "empty"
+                    limit_behavior = "incomplete_chart_not_snapshotted"
+                    snapshot_depth = 0
+                    tracked_found_ids = []
+                    retained_entries = []
+                else:
+                    tracked_found = [entry for entry in entries if entry["app_id"] in tracked_ids]
+                    tracked_found_ids = [entry["app_id"] for entry in tracked_found]
+                    if tracked_found:
+                        lowest_rank = max(entry["position"] for entry in tracked_found)
+                        snapshot_depth = min(depth, lowest_rank + 5 if lowest_rank % 10 == 0 else ((lowest_rank + 9) // 10) * 10)
+                        retained_entries = [entry for entry in entries if entry["position"] <= snapshot_depth]
+                        status = "ok"
+                        limit_behavior = "tracked_rank_snapshot"
+                    else:
+                        snapshot_depth, retained_entries = 0, []
+                        status = "no_tracked_titles"
+                        limit_behavior = "no_tracked_title_in_complete_chart"
+            else:
                 status = "ok" if entries else "empty"
                 limit_behavior = "exceeded_but_accepted" if source_count > depth else "feed_order_returned"
-            else:
-                status = "ok" if len(entries) == depth else ("partial" if entries else "empty")
-                limit_behavior = "requested_limit_respected"
-            rows = [{**base, **entry, "feed_updated_at": feed_meta["feed_updated_at"]}
-                    for entry in entries]
+                snapshot_depth, retained_entries, tracked_found_ids = len(entries), entries, []
+            rows = [{**base, "snapshot_depth": snapshot_depth,
+                     "tracked_app_ids_found": ",".join(tracked_found_ids),
+                     **entry, "feed_updated_at": feed_meta["feed_updated_at"]}
+                    for entry in retained_entries]
+            entries = retained_entries
             error = ""
         except HTTPError as exc:
             http_status = exc.code
             rows, entries, status = [], [], "error"
-            source_count, category_filter_id = 0, ""
+            source_count, category_filter_id, snapshot_depth = 0, "", 0
+            tracked_found_ids = []
             limit_behavior = "not_verified"
             error = f"HTTPError: HTTP {exc.code}"
         except (ValueError, KeyError, TypeError, URLError, OSError, TimeoutError, json.JSONDecodeError) as exc:
@@ -244,6 +266,7 @@ def collect(
             error = f"{type(exc).__name__}: {exc}"
         status_row = {
             **base, "returned_count": len(entries), "source_count": source_count,
+            "snapshot_depth": snapshot_depth, "tracked_app_ids_found": ",".join(tracked_found_ids),
             "category_filter_id": category_filter_id, "http_status": http_status,
             "status": status, "limit_behavior": limit_behavior,
             "error": error, **feed_meta, "source_url": url,
