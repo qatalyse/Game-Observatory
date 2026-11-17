@@ -23,6 +23,7 @@ GENRES = {
     "games": 6014,
     "adventure": 7002,
     "role-playing": 7014,
+    "simulation": 7015,
     "action": 7001,
     "strategy": 7017,
 }
@@ -182,7 +183,7 @@ def parse_entries(payload: dict, depth: int, feed_type: str) -> tuple[list[dict]
 
 def collect(
     countries: tuple[str, ...] = ("SG",),
-    genres: tuple[str, ...] = ("games", "adventure", "role-playing", "action", "strategy"),
+    genres: tuple[str, ...] = ("games", "adventure", "role-playing", "simulation"),
     feed_types: tuple[str, ...] = ("top-grossing", "new-applications"),
     depth: int = DEFAULT_DEPTH,
     tracked_app_ids: set[str] | frozenset[str] | None = None,
@@ -240,9 +241,10 @@ def collect(
                         status = "ok"
                         limit_behavior = "tracked_rank_snapshot"
                     else:
-                        snapshot_depth, retained_entries = 0, []
-                        status = "no_tracked_titles"
-                        limit_behavior = "no_tracked_title_in_complete_chart"
+                        snapshot_depth = min(depth, 10)
+                        retained_entries = entries[:snapshot_depth]
+                        status = "fallback_top_10"
+                        limit_behavior = "no_tracked_title_fallback_top_10"
             else:
                 status = "ok" if entries else "empty"
                 limit_behavior = "exceeded_but_accepted" if source_count > depth else "feed_order_returned"
@@ -302,7 +304,7 @@ def write_csv(path: Path, rows: list[dict], fields: tuple[str, ...]) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Collect Apple legacy Top Grossing and New Applications feeds")
     parser.add_argument("--countries", default="SG", help="Comma-separated Apple markets or ALL")
-    parser.add_argument("--genres", default="games,adventure,role-playing,action,strategy")
+    parser.add_argument("--genres", default="games,adventure,role-playing,simulation")
     parser.add_argument("--feed-types", default="top-grossing,new-applications")
     parser.add_argument("--depth", type=int, default=DEFAULT_DEPTH)
     parser.add_argument("--output", default="data/apple")
