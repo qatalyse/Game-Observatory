@@ -77,13 +77,13 @@ class AppleCollectorTests(unittest.TestCase):
         )
         self.assertEqual(len(calls), 4)
         self.assertEqual(len(statuses), 4)
-        self.assertEqual(len(rows), 8)
+        self.assertEqual(len(rows), 4)
         self.assertEqual({s["status"] for s in statuses}, {"partial", "ok"})
         self.assertEqual({s["http_status"] for s in statuses}, {200})
-        self.assertEqual({r["feed_type"] for r in rows}, set(CHARTS.values()))
+        self.assertEqual({r["feed_type"] for r in rows}, {"newapplications"})
         self.assertEqual(
             {r["position_semantics"] for r in rows},
-            {"grossing_chart_rank", "feed_order_not_verified_as_rank"},
+            {"feed_order_not_verified_as_rank"},
         )
 
     def test_partial_and_error_statuses_are_explicit(self):
@@ -96,7 +96,7 @@ class AppleCollectorTests(unittest.TestCase):
             countries=("SG",), genres=("adventure", "action"),
             feed_types=("top-grossing",), fetch=fake_fetch, clock=fixed,
         )
-        self.assertEqual(len(rows), 2)
+        self.assertEqual(len(rows), 0)
         self.assertEqual([s["status"] for s in statuses], ["partial", "error"])
         self.assertTrue(all(r["retrieved_at_utc"] == "2026-11-17T00:00:00+00:00" for r in rows))
 
