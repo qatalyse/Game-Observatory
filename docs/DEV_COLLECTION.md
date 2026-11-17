@@ -20,7 +20,9 @@ Top Grossing enforces the requested Top 20 depth. New Applications accepts
 all entries returned by Apple even when the legacy endpoint exceeds the
 requested limit (the observed Singapore response returned 104). Its position
 is feed order only, not a verified rank or date ordering. The status records
-when more entries than requested were accepted.
+when more entries than requested were accepted. For New Applications + Games,
+entries are additionally filtered by their own RSS category ID (6014); source
+and retained counts are displayed separately, preserving original feed positions.
 These are legacy Apple-hosted endpoints; successful requests do not establish
 official documentation or long-term support. No persistent storage, Tableau
 publication or scheduled jobs are enabled.

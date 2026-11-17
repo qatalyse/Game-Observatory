@@ -225,10 +225,12 @@ def collect(
         except HTTPError as exc:
             http_status = exc.code
             rows, entries, status = [], [], "error"
+            source_count, category_filter_id = 0, ""
             limit_behavior = "not_verified"
             error = f"HTTPError: HTTP {exc.code}"
         except (ValueError, KeyError, TypeError, URLError, OSError, TimeoutError, json.JSONDecodeError) as exc:
             rows, entries, status = [], [], "error"
+            source_count, category_filter_id = 0, ""
             limit_behavior = "not_verified"
             error = f"{type(exc).__name__}: {exc}"
         status_row = {

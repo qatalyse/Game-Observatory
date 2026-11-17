@@ -47,8 +47,8 @@ class AppleCollectorTests(unittest.TestCase):
         )
 
     def test_extracts_legacy_metadata_fields(self):
-        grossing, meta = parse_entries(payload(), 20, "top-grossing")
-        new_apps, _ = parse_entries(payload(), 20, "new-applications")
+        grossing, meta = parse_entries(payload(category_id="7014"), 20, "top-grossing")
+        new_apps, _ = parse_entries(payload(category_id="7014"), 20, "new-applications")
         self.assertEqual(grossing[0]["position_semantics"], "grossing_chart_rank")
         self.assertEqual(new_apps[0]["position_semantics"], "feed_order_not_verified_as_rank")
         self.assertEqual(grossing[0]["artwork_url"], "large.png")
@@ -107,7 +107,7 @@ class AppleCollectorTests(unittest.TestCase):
         rows, statuses = collect(
             countries=("SG",), genres=("games",),
             feed_types=("new-applications",), depth=20,
-            fetch=lambda url: (payload(ids), 200), clock=fixed,
+            fetch=lambda url: (payload(ids, category_id="6014"), 200), clock=fixed,
         )
         self.assertEqual(len(rows), 104)
         self.assertEqual(statuses[0]["returned_count"], 104)

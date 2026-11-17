@@ -38,7 +38,7 @@ Top Grossing strictly validates the requested depth. New Applications is a
 discovery feed and may ignore the requested limit: all returned entries are
 accepted (the observed Singapore response returned 104 entries for limit=20).
 The status row records when the requested limit was exceeded but accepted.
-This does not establish that the feed is a complete catalogue of new games.
+This does not establish that the feed is a complete catalogue of new games. For New Applications + Games (6014), entries are additionally filtered using each entry's own RSS category ID because the legacy feed may ignore the URL genre parameter. Source and retained counts are recorded separately, and original feed positions are preserved.
 
 The collector extracts common legacy fields where present: app ID, name,
 developer and developer URL, release date, store link, artwork, description,

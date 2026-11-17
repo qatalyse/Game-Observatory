@@ -7,6 +7,7 @@ type Ranking = {
 };
 type ChartStatus = {
   feed_type: string; genre: string; status: string; returned_count: number;
+  source_count: number; category_filter_id: number | string;
   http_status: number | null; error: string; feed_fields: string;
   entry_fields: string; source_url: string;
 };
@@ -75,7 +76,9 @@ function AppleDevCollection() {
           {result.statuses.map(status => <div className="apple-status-line" key={status.feed_type + status.genre}>
             <span className={status.status === "ok" ? "apple-status-dot ok" : "apple-status-dot warn"} />
             <strong>{status.status.toUpperCase()}</strong>
-            <span>HTTP {status.http_status ?? "—"} · {status.returned_count} entries</span>
+            <span>HTTP {status.http_status ?? "—"} · {status.returned_count} shown</span>
+            {status.source_count > status.returned_count && <span>{status.source_count} source entries</span>}
+            {status.category_filter_id && <span>Filtered to Games (6014)</span>}
             {status.error && <span className="dev-error">{status.error}</span>}
           </div>)}
           <div className="dev-actions">
