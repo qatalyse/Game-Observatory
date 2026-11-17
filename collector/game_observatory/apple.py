@@ -192,8 +192,16 @@ def collect(
     fetch: Callable[[str], object] = fetch_json,
     clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
     pause_seconds: float = 0,
+    *,
+    full_chart: bool = False,
 ) -> tuple[list[dict], list[dict]]:
-    """Collect feeds and apply dynamic Top Grossing snapshot retention."""
+    """Collect feeds; full_chart opts out of Top Grossing snapshot retention.
+
+    Full-chart extraction also retains valid incomplete charts. The default
+    diagnostic/snapshot path and its CLI keep their existing behavior.
+    """
+    if full_chart and any(feed_type != "top-grossing" for feed_type in feed_types):
+        raise ValueError("Full-chart extraction only supports Top Grossing")
     # None uses configured defaults; an explicitly empty set triggers the Top 10 fallback.
     tracked_ids = {str(v) for v in (tracked_app_ids if tracked_app_ids is not None else TRACKED_GAME_IDS)}
     if any(not value.isdigit() for value in tracked_ids):
@@ -227,7 +235,11 @@ def collect(
             category_filter_id = GENRES["games"] if feed_type == "new-applications" and genre == "games" else ""
             if category_filter_id:
                 entries = [entry for entry in entries if str(entry.get("category_id", "")) == str(category_filter_id)]
-            if feed_type == "top-grossing":
+            if full_chart:
+                status = "ok" if source_count == depth else "partial" if entries else "empty"
+                limit_behavior = "full_chart_returned"
+                snapshot_depth, retained_entries, tracked_found_ids = source_count, entries, []
+            elif feed_type == "top-grossing":
                 if len(entries) < depth:
                     status = "partial" if entries else "empty"
                     limit_behavior = "incomplete_chart_not_snapshotted"

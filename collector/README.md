@@ -1,5 +1,45 @@
 # M1B-Apple — legacy Apple RSS diagnostics
 
+## Manual Adventure Top 50 test dataset
+
+Open **Actions → Extract Apple Adventure test dataset → Run workflow**.
+This workflow runs only on manual dispatch. It fetches the legacy iTunes RSS
+Top Grossing (`topgrossingapplications`) Adventure (`7002`) Top 50 for SG, US,
+JP, KR, CN, MY, TH, ID, PH and VN, using the existing collector and parser.
+There are no schedules, Supabase credentials, or database writes.
+
+Download the two artifacts on the completed run page (retained for 30 days):
+
+- `apple-adventure-top50-rankings` contains `apple_rankings.csv`: all fetched,
+  validated chart entries, up to 500 rows across the 10 markets.
+- `apple-adventure-top50-statuses` contains `apple_statuses.csv`: exactly one
+  outcome per market, including HTTP/parse errors, partial and empty charts.
+
+This separate entry point opts into `collect(full_chart=True)` and **does not
+apply tracked-game snapshot retention**. Partial charts retain all valid fetched
+entries with their original ranks; empty/error feeds have no ranking rows.
+`source_count`, `returned_count` and `snapshot_depth` equal the fetched/retained
+count; `tracked_app_ids_found` is empty and `limit_behavior` is
+`full_chart_returned` for successfully parsed charts. `ok` means all 50 entries,
+`partial` means 1–49, `empty` means zero, and `error` records a request or invalid
+response failure. Malformed, duplicate or oversized charts are rejected by the
+existing strict parser. `snapshot_id` joins each market's rows to its status.
+
+Errors fail the collection step after writing both CSVs; uploads still run so
+the results and error details remain downloadable. Partial/empty source outcomes
+do not fail the job. The run summary verifies counts and lists market outcomes.
+The legacy source may be unavailable or return fewer than 50 entries; no rows
+are fabricated. Existing diagnostics, API callers and snapshot policy are unchanged.
+
+Run the same fixed-scope extraction locally with Python 3.11+ (standard library):
+
+```bash
+cd collector
+python -m game_observatory.apple_test_dataset --output data/apple-test
+```
+
+## Existing diagnostics
+
 This collector tests two legacy iTunes RSS feed types in Singapore:
 - `topgrossingapplications` (Top Grossing chart)
 - `newapplications` (New Applications feed)

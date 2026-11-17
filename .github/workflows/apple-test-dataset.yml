@@ -1,0 +1,83 @@
+name: Extract Apple Adventure test dataset
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: collector
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test offline fixtures
+        run: python -m unittest discover -s tests -v
+      - name: Collect full Top Grossing Adventure charts
+        run: python -m game_observatory.apple_test_dataset --output data/apple-test
+      - name: Verify CSVs and summarize market outcomes
+        if: always()
+        run: |
+          python - <<'PY'
+          import csv
+          import os
+          from collections import Counter
+          from pathlib import Path
+          from game_observatory.apple import MARKETS
+
+          output = Path("data/apple-test")
+          with (output / "apple_rankings.csv").open(encoding="utf-8", newline="") as handle:
+              rows = list(csv.DictReader(handle))
+          with (output / "apple_statuses.csv").open(encoding="utf-8", newline="") as handle:
+              statuses = list(csv.DictReader(handle))
+          assert [s["country"] for s in statuses] == list(MARKETS)
+          assert len(rows) <= 500
+          counts = Counter(r["country"] for r in rows)
+          assert set(counts) <= set(MARKETS)
+          for status in statuses:
+              market_rows = [r for r in rows if r["country"] == status["country"]]
+              count = int(status["returned_count"])
+              assert count == counts[status["country"]] <= 50
+              assert count == int(status["source_count"]) == int(status["snapshot_depth"])
+              assert status["status"] in {"ok", "partial", "empty", "error"}
+              assert (status["status"] == "ok") == (count == 50)
+              assert (status["status"] == "partial") == (0 < count < 50)
+              assert [int(r["position"]) for r in market_rows] == list(range(1, count + 1))
+              assert all(r["snapshot_id"] == status["snapshot_id"] for r in market_rows)
+          assert all(r["feed_type"] == "topgrossingapplications" and r["genre_id"] == "7002"
+                     and r["requested_depth"] == "50" for r in rows + statuses)
+          lines = ["## Apple Adventure Top 50 test dataset", "",
+                   f"Fetched ranking rows: {len(rows)} / 500. Market statuses: {len(statuses)} / 10.", "",
+                   "| Market | Status | Fetched rows | HTTP |", "| --- | --- | ---: | --- |"]
+          lines += [f"| {s['country']} | {s['status']} | {s['returned_count']} | {s['http_status']} |"
+                    for s in statuses]
+          lines += ["", "Download both CSV artifacts below. Error details are in apple_statuses.csv.",
+                    "Full fetched charts; no tracked-game filtering or database writes."]
+          summary = "\n".join(lines) + "\n"
+          print(summary)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
+              handle.write(summary)
+          PY
+      - name: Upload consolidated rankings CSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-adventure-top50-rankings
+          path: collector/data/apple-test/apple_rankings.csv
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload per-market statuses CSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-adventure-top50-statuses
+          path: collector/data/apple-test/apple_statuses.csv
+          if-no-files-found: error
+          retention-days: 30
