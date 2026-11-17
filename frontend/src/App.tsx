@@ -62,7 +62,7 @@ function AppleDevCollection() {
         <input id="dev-token" type="password" value={token} onChange={event => setToken(event.target.value)} autoComplete="off" placeholder="Enter token" />
         <div className="dev-select-row">
           <label>Feed type<select value={feedType} onChange={event => setFeedType(event.target.value)}><option value="top-grossing">Top Grossing (topgrossingapplications)</option><option value="new-applications">New Applications (newapplications)</option></select></label>
-          <label>Category<select value={genre} onChange={event => setGenre(event.target.value)}><option value="games">Games</option><option value="adventure">Adventure</option><option value="role-playing">Role-Playing</option><option value="simulation">Simulation</option><option value="strategy">Strategy</option><option value="casual">Casual</option></select></label>
+          <label>Category<select value={genre} onChange={event => setGenre(event.target.value)}><option value="games">Games</option><option value="adventure">Adventure</option><option value="role-playing">Role-Playing</option><option value="simulation">Simulation</option><option value="strategy">Strategy</option><option value="casual">Casual</option><option value="strategy">Strategy</option><option value="casual">Casual</option></select></label>
         </div>
         <fieldset className="tracked-games-control">
           <legend>Tracked games for snapshot calculation</legend>
