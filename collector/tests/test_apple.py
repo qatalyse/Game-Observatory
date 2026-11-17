@@ -37,6 +37,10 @@ class AppleCollectorTests(unittest.TestCase):
     def test_all_markets_and_both_feed_types(self):
         self.assertEqual(len(MARKETS), 10)
         self.assertEqual(GENRES["simulation"], 7015)
+        self.assertEqual(GENRES["strategy"], 7017)
+        self.assertEqual(GENRES["casual"], 7003)
+        self.assertIn("/genre=7017/", feed_url("SG", "strategy", 50, "top-grossing"))
+        self.assertIn("/genre=7003/", feed_url("SG", "casual", 50, "top-grossing"))
         self.assertEqual(set(CHARTS), {"top-grossing", "new-applications"})
         self.assertEqual(
             feed_url("SG", "games", 20, "top-grossing"),
