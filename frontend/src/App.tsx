@@ -51,7 +51,7 @@ function AppleDevCollection() {
   return (
     <section className="panel dev-panel" aria-label="Developer Apple RSS diagnostics">
       <div className="panel-heading">
-        <div><h2>Developer · Apple legacy RSS diagnostics</h2><p>Singapore · Top 20 · Test one feed/category at a time</p></div>
+        <div><h2>Developer · Apple legacy RSS diagnostics</h2><p>Singapore · Top Grossing 50 / New Applications 20 requested</p></div>
         <span className="panel-status">One request per run</span>
       </div>
       <div className="dev-body">
@@ -60,7 +60,7 @@ function AppleDevCollection() {
         <input id="dev-token" type="password" value={token} onChange={event => setToken(event.target.value)} autoComplete="off" placeholder="Enter token" />
         <div className="dev-select-row">
           <label>Feed type<select value={feedType} onChange={event => setFeedType(event.target.value)}><option value="top-grossing">Top Grossing (topgrossingapplications)</option><option value="new-applications">New Applications (newapplications)</option></select></label>
-          <label>Category<select value={genre} onChange={event => setGenre(event.target.value)}><option value="games">Games</option><option value="adventure">Adventure</option><option value="role-playing">Role-Playing</option><option value="action">Action</option><option value="strategy">Strategy</option></select></label>
+          <label>Category<select value={genre} onChange={event => setGenre(event.target.value)}><option value="games">Games</option><option value="adventure">Adventure</option><option value="role-playing">Role-Playing</option><option value="simulation">Simulation</option></select></label>
         </div>
         <button className="dev-run" type="button" disabled={!token || loading} onClick={run}>{loading ? "Testing feed…" : "Run Selected Feed Test"}</button>
         {error && <p className="dev-error" role="alert">{error}</p>}
@@ -69,7 +69,7 @@ function AppleDevCollection() {
             <div>
               <span className="apple-eyebrow">SINGAPORE APP STORE</span>
               <h3>{result.feed_type === "topgrossingapplications" ? "Top Grossing Games" : "New Applications"}</h3>
-              <p>{result.genre.replace("-", " ")} · {result.feed_type === "newapplications" ? "20 requested; feed may return more" : "Top 20 chart"} · {result.rankings.length} entries returned</p>
+              <p>{result.genre.replace("-", " ")} · {result.feed_type === "newapplications" ? "20 requested; feed may return more" : "Top 50 fetched; snapshot retained"} · {result.rankings.length} entries returned</p>
             </div>
             <div className="apple-result-count"><strong>{result.rankings.length}</strong><span>apps returned</span></div>
           </div>
@@ -79,8 +79,7 @@ function AppleDevCollection() {
             <span>HTTP {status.http_status ?? "—"} · {status.returned_count} shown</span>
             {status.source_count > status.returned_count && <span>{status.source_count} source entries</span>}
             {status.category_filter_id && <span>Filtered to Games (6014)</span>}
-            {status.source_count > status.returned_count && <span>{status.source_count} source entries</span>}
-            {status.category_filter_id && <span>Filtered to Games (6014)</span>}
+            {status.status === "fallback_top_10" && <span>No tracked titles in Top 50 · showing Top 10 fallback</span>}
             {status.error && <span className="dev-error">{status.error}</span>}
           </div>)}
           <div className="dev-actions">
