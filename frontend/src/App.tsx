@@ -64,17 +64,56 @@ function AppleDevCollection() {
         <button className="dev-run" type="button" disabled={!token || loading} onClick={run}>{loading ? "Testing feed…" : "Run Selected Feed Test"}</button>
         {error && <p className="dev-error" role="alert">{error}</p>}
         {result && <div className="dev-results">
-          <p className="dev-note">Feed: {result.feed_type} · Category: {result.genre} · Returned {result.rankings.length} entries.</p>
-          {result.statuses.map(s => <div className="dev-status" key={s.feed_type + s.genre}>
-            <strong>{s.feed_type} · {s.genre}</strong>
-            <span>{s.status} · {s.returned_count} entries{s.http_status ? ` · HTTP ${s.http_status}` : ""}</span>
-            {s.error && <small>{s.error}</small>}
-            <small>Feed fields: {s.feed_fields || "not available"}</small>
-            <small>Entry fields: {s.entry_fields || "not available"}</small>
+          <div className="apple-result-overview">
+            <div>
+              <span className="apple-eyebrow">SINGAPORE APP STORE</span>
+              <h3>{result.feed_type === "topgrossingapplications" ? "Top Grossing Games" : "New Applications"}</h3>
+              <p>{result.genre.replace("-", " ")} · Top 20 requested · {result.rankings.length} entries returned</p>
+            </div>
+            <div className="apple-result-count"><strong>{result.rankings.length}</strong><span>apps returned</span></div>
+          </div>
+          {result.statuses.map(status => <div className="apple-status-line" key={status.feed_type + status.genre}>
+            <span className={status.status === "ok" ? "apple-status-dot ok" : "apple-status-dot warn"} />
+            <strong>{status.status.toUpperCase()}</strong>
+            <span>HTTP {status.http_status ?? "—"} · {status.returned_count} entries</span>
+            {status.error && <span className="dev-error">{status.error}</span>}
           </div>)}
-          <div className="dev-actions"><button type="button" disabled={!result.rankings.length} onClick={() => downloadCsv(`apple_sg_${result.feed_type}_${result.genre}.csv`, result.rankings)}>Download results CSV</button></div>
-          <div className="dev-table-wrap"><table className="dev-table"><thead><tr><th>Position</th><th>App</th><th>Category</th><th>Release date</th></tr></thead><tbody>{result.rankings.map(row => <tr key={row.app_id}><td>{row.position}</td><td>{row.title}</td><td>{row.category_label || "—"}</td><td>{row.release_date || "—"}</td></tr>)}</tbody></table></div>
+          <div className="dev-actions">
+            <button type="button" disabled={!result.rankings.length} onClick={() => downloadCsv(`apple_sg_${result.feed_type}_${result.genre}.csv`, result.rankings)}>Download CSV</button>
+          </div>
+          <div className="apple-results-table-wrap">
+            <table className="apple-results-table">
+              <thead><tr>
+                <th>{result.feed_type === "topgrossingapplications" ? "Rank" : "Feed order"}</th>
+                <th>Application</th><th>Release date</th><th>Category</th><th>App price</th><th></th>
+              </tr></thead>
+              <tbody>{result.rankings.map(row => <tr key={row.app_id}>
+                <td className="apple-position">{row.position}</td>
+                <td><div className="apple-app-cell">
+                  {row.artwork_url ? <img className="apple-app-icon" src={row.artwork_url} alt="" loading="lazy" /> : <span className="apple-app-icon apple-app-placeholder">?</span>}
+                  <div className="apple-app-copy">
+                    <strong>{row.title}</strong>
+                    <span>{row.developer || "Developer unavailable"}</span>
+                    <small>ID {row.app_id}</small>
+                  </div>
+                </div></td>
+                <td>{row.release_date || "—"}</td>
+                <td>{row.category_label || "—"}</td>
+                <td>{row.price_amount ? `${row.price_currency} ${row.price_amount}` : "—"}</td>
+                <td>{row.store_url ? <a className="apple-store-link" href={row.store_url} target="_blank" rel="noreferrer">View <span aria-hidden="true">↗</span></a> : "—"}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
           {result.feed_type === "newapplications" && <p className="dev-note">Position is feed order only; it is not assumed to be rank or chronological release order.</p>}
+          <details className="apple-raw-details">
+            <summary>Raw feed diagnostics and available fields</summary>
+            {result.statuses.map(status => <div className="dev-raw-fields" key={status.feed_type + status.genre}>
+              <strong>{status.feed_type} · {status.genre}</strong>
+              <small>Feed fields: {status.feed_fields || "not available"}</small>
+              <small>Entry fields: {status.entry_fields || "not available"}</small>
+              <small>Source: {status.source_url}</small>
+            </div>)}
+          </details>
         </div>}
       </div>
     </section>
