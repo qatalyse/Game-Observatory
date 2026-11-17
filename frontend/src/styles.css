@@ -93,3 +93,10 @@ button { font: inherit; }
 .dev-table th, .dev-table td { padding: 10px 12px; border-bottom: 1px solid #293746; text-align: left; }
 .dev-table th { color: #80e12d; background: #101923; position: sticky; top: 0; }
 @media (max-width: 760px) { .dev-status-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+
+.dev-status-grid-wide { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.dev-feed-results { display:grid; gap:12px; width:100%; }
+.dev-feed-results h3 { margin:8px 0 0; color:#80e12d; font-size:.9rem; }
+.dev-raw-fields { display:grid; gap:5px; padding:10px 12px; background:#101923; border:1px solid #344354; border-radius:5px; overflow-wrap:anywhere; }
+.dev-raw-fields strong { color:#80e12d; font-size:.78rem; }
+.dev-raw-fields small { color:#91a1af; font-size:.72rem; line-height:1.5; }

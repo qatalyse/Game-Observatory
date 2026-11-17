@@ -1,18 +1,26 @@
 import { useState } from "react";
 
-type Ranking = { country: string; genre: string; rank: number; title: string; app_id: string; retrieved_at_utc: string };
-type ChartStatus = { genre: string; status: string; returned_count: number; error: string };
-type Collection = { rankings: Ranking[]; statuses: ChartStatus[]; rankings_csv: string; statuses_csv: string };
+type Ranking = {
+  country: string; genre: string; feed_type: string; position: number;
+  position_semantics: string; title: string; app_id: string;
+  release_date: string; price_amount: string; price_currency: string;
+  category_label: string; artwork_url: string; store_url: string;
+};
+type ChartStatus = {
+  feed_type: string; genre: string; status: string; returned_count: number;
+  http_status: number | null; error: string; feed_fields: string;
+  entry_fields: string; source_url: string;
+};
+type Collection = {
+  rankings: Ranking[]; statuses: ChartStatus[];
+  rankings_csv: string; statuses_csv: string; request_count: number;
+};
 
 function downloadCsv(name: string, contents: string) {
   const url = URL.createObjectURL(new Blob([contents], { type: "text/csv;charset=utf-8" }));
   const link = document.createElement("a");
-  link.href = url;
-  link.download = name;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  link.href = url; link.download = name; document.body.appendChild(link);
+  link.click(); link.remove(); URL.revokeObjectURL(url);
 }
 
 function AppleDevCollection() {
@@ -23,36 +31,53 @@ function AppleDevCollection() {
   async function run() {
     setLoading(true); setError(""); setResult(null);
     try {
-      const response = await fetch("/api/dev/apple-collect", {
-        method: "POST", headers: { "X-Dev-Token": token },
-      });
+      const response = await fetch("/api/dev/apple-collect", { method: "POST", headers: { "X-Dev-Token": token } });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || `Collection failed (${response.status})`);
       setResult(body as Collection);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Collection failed");
-    } finally { setLoading(false); }
+    } catch (err) { setError(err instanceof Error ? err.message : "Collection failed"); }
+    finally { setLoading(false); }
   }
+  const grossing = result?.rankings.filter(row => row.feed_type === "topgrossingapplications") ?? [];
+  const newest = result?.rankings.filter(row => row.feed_type === "newapplications") ?? [];
   return (
-    <section className="panel dev-panel" aria-label="Developer Apple RSS collection">
-      <div className="panel-heading"><div><h2>Developer · Apple RSS collection</h2><p>Singapore · Top Free · Top 20 · Four genres</p></div><span className="panel-status">Manual test</span></div>
+    <section className="panel dev-panel" aria-label="Developer Apple RSS diagnostics">
+      <div className="panel-heading">
+        <div><h2>Developer · Apple legacy RSS diagnostics</h2><p>Singapore · Top 20 · Top Grossing + New Applications · 5 genre filters</p></div>
+        <span className="panel-status">10 manual requests</span>
+      </div>
       <div className="dev-body">
-        <p className="dev-note">Fetch real rankings for verification. No data is saved to Supabase, Google Sheets or Tableau.</p>
+        <p className="dev-note">Tests both legacy feed types against Games, Adventure, Role-Playing, Action and Strategy. No results are saved to a database or Tableau.</p>
         <label htmlFor="dev-token">Dev collection token (configured in Vercel)</label>
         <input id="dev-token" type="password" value={token} onChange={event => setToken(event.target.value)} autoComplete="off" placeholder="Enter token" />
-        <button className="dev-run" type="button" disabled={!token || loading} onClick={run}>{loading ? "Collecting…" : "Run Collection"}</button>
+        <button className="dev-run" type="button" disabled={!token || loading} onClick={run}>{loading ? "Testing 10 feed combinations…" : "Run Apple Feed Diagnostics"}</button>
         {error && <p className="dev-error" role="alert">{error}</p>}
         {result && <div className="dev-results">
-          <p className="dev-note">Received {result.rankings.length} ranking rows. Check individual chart statuses below.</p>
-          <div className="dev-status-grid">{result.statuses.map(s => <div className="dev-status" key={s.genre}><strong>{s.genre}</strong><span>{s.status} · {s.returned_count} rows</span>{s.error && <small>{s.error}</small>}</div>)}</div>
-          <div className="dev-actions"><button type="button" onClick={() => downloadCsv("apple_sg_top20_rankings.csv", result.rankings_csv)}>Download rankings CSV</button><button type="button" onClick={() => downloadCsv("apple_sg_chart_statuses.csv", result.statuses_csv)}>Download status CSV</button></div>
-          <div className="dev-table-wrap"><table className="dev-table"><thead><tr><th>Genre</th><th>Rank</th><th>Game</th></tr></thead><tbody>{result.rankings.slice(0, 40).map(row => <tr key={`${row.genre}-${row.rank}-${row.app_id}`}><td>{row.genre}</td><td>{row.rank}</td><td>{row.title}</td></tr>)}</tbody></table></div>
-          {result.rankings.length > 40 && <p className="dev-note">Showing the first 40 rows. Download CSV for all results.</p>}
+          <p className="dev-note">Completed {result.request_count} requests and received {result.rankings.length} app entries. Review each feed/genre response below.</p>
+          <div className="dev-status-grid dev-status-grid-wide">{result.statuses.map(s => <div className="dev-status" key={s.feed_type + s.genre}>
+            <strong>{s.feed_type === "topgrossingapplications" ? "Top Grossing" : "New Applications"} · {s.genre}</strong>
+            <span>{s.status} · {s.returned_count} entries{s.http_status ? ` · HTTP ${s.http_status}` : ""}</span>
+            {s.error && <small>{s.error}</small>}
+          </div>)}</div>
+          <div className="dev-actions">
+            <button type="button" onClick={() => downloadCsv("apple_sg_topgrossing_and_newapplications.csv", result.rankings_csv)}>Download app entries CSV</button>
+            <button type="button" onClick={() => downloadCsv("apple_sg_legacy_feed_diagnostics.csv", result.statuses_csv)}>Download feed diagnostics CSV</button>
+          </div>
+          <div className="dev-feed-results">
+            <h3>Top Grossing entries ({grossing.length})</h3>
+            <div className="dev-table-wrap"><table className="dev-table"><thead><tr><th>Genre</th><th>Rank</th><th>App</th><th>Category</th><th>Release date</th></tr></thead><tbody>{grossing.slice(0, 60).map(row => <tr key={row.genre + row.position + row.app_id}><td>{row.genre}</td><td>{row.position}</td><td>{row.title}</td><td>{row.category_label || "—"}</td><td>{row.release_date || "—"}</td></tr>)}</tbody></table></div>
+            <h3>New Applications entries ({newest.length})</h3>
+            <p className="dev-note">Position below is feed order only; it is not assumed to be a rank or chronological release order.</p>
+            <div className="dev-table-wrap"><table className="dev-table"><thead><tr><th>Genre</th><th>Feed order</th><th>App</th><th>Category</th><th>Release date</th></tr></thead><tbody>{newest.slice(0, 60).map(row => <tr key={row.genre + row.position + row.app_id}><td>{row.genre}</td><td>{row.position}</td><td>{row.title}</td><td>{row.category_label || "—"}</td><td>{row.release_date || "—"}</td></tr>)}</tbody></table></div>
+            <h3>Raw response field inspection</h3>
+            {result.statuses.map(s => <div className="dev-raw-fields" key={s.feed_type + s.genre}><strong>{s.feed_type} · {s.genre}</strong><small>Feed: {s.feed_fields || "not available"}</small><small>Entry: {s.entry_fields || "not available"}</small></div>)}
+          </div>
         </div>}
       </div>
     </section>
   );
 }
+
 
 
 type Section = "Overview" | "Steam" | "Apple Markets" | "SQL Analysis";

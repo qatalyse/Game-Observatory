@@ -1,45 +1,43 @@
-# Manual Apple collection preview on Vercel
+# Manual Apple legacy RSS diagnostics on Vercel
 
-This feature is intended for **temporary developer verification**, not a public
-production API or durable historical ingestion. The Apple Markets tab contains
-a Run Collection button. A token is entered at run time and kept only in React
-component memory; it is never committed, placed in a URL, or stored in local
-storage.
+## Purpose
+
+Temporary, token-protected developer test for Singapore Top 20:
+- `topgrossingapplications`
+- `newapplications`
+
+Both feed types are tested against Games (6014), Adventure (7002),
+Role-Playing (7014), Action (7001), and Strategy (7017). One button click
+makes ten upstream requests. The status response includes HTTP status,
+entry count, parser status, feed-level fields and the first entry's fields.
 
 ## Enable
 
-1. In the Vercel project, go to Settings -> Environment Variables.
-2. Create `DEV_COLLECT_TOKEN` with a long randomly generated secret, scoped to
-   the environment you are testing (Preview and/or Production).
-3. Redeploy the project after changing environment variables.
-4. Open the latest Vercel deployment, navigate to Apple Markets, enter the
-   secret and click Run Collection.
-5. Inspect the four Singapore Top Free genre statuses and download rankings
-   or status CSV. Keep CSV files if you need the observations later.
+1. Set `DEV_COLLECT_TOKEN` in Vercel for the environment being tested.
+2. Redeploy after changing the variable.
+3. Open Apple Markets, enter the token and click Run Collection.
+4. Review all ten feed/genre combinations and download both CSV files.
 
-**Never commit or paste this secret into a chat.** The server requires it in
-the `X-Dev-Token` header. The API responds with 503 until configured and 401
-for invalid tokens. The token is sent over HTTPS. There is no public Run
-Collection API without authentication.
+Never commit or share the token.
 
-## Scope and limitations
+## Interpret results
 
-- Exactly SG, Top Free, Top 20, Adventure, Role-Playing, Action, Strategy.
-- Four upstream requests per click. No persistent storage, cron, database
-  writes, Google Sheets writes, or Tableau publication.
-- Returned rows represent retrieval-time samples, not Apple's update time.
-- Each feed has a status: ok, partial, empty or error. Do not treat a partial
-  feed as a complete Top 20 chart.
-- All returned games are exported; the dataset is not limited to HoYoverse.
-- Results and CSV are returned directly to the browser. The Python function
-  is stateless. A browser refresh loses the results unless CSVs were saved.
-- Token authentication limits casual abuse but is **not a rate limiter**.
-  Keep this endpoint disabled outside verification, or add authenticated
-  account-level quotas before wider deployment.
-- The Apple legacy RSS source may be unavailable or change response format.
+- `ok`: exactly the requested depth was returned.
+- `partial`: fewer than requested but at least one entry returned.
+- `empty`: no entries returned.
+- `error`: HTTP, transport, or parsing failure.
 
-## Endpoint
+A 200 response alone does not validate that the requested semantic is correct.
+For `newapplications`, `position` is feed order, not a verified chart rank
+or release-date order. Inspect actual release dates and field coverage before
+interpreting the list as a chronological new-release catalog.
 
-`POST /api/dev/apple-collect` with `X-Dev-Token` header.
-The response contains `rankings`, `statuses`, `rankings_csv`, and
-`statuses_csv`. The Vercel rewrite is defined in the root `vercel.json`.
+## Limitations
+
+- Singapore only; Top 20.
+- No storage, database writes, Google Sheets writes, Tableau publication,
+  cron schedule or automatic collection.
+- Ten requests per click; token authentication is not a full rate limiter.
+- Feeds are legacy iTunes RSS endpoints; this diagnostic does not establish
+  that Apple currently documents or guarantees them.
+- Results exist only in the response/browser until the user downloads CSV.
