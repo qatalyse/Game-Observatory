@@ -32,7 +32,7 @@ CHARTS = {
 }
 DEFAULT_DEPTH = 50
 SNAPSHOT_BUFFER = 5
-TRACKED_GAME_IDS = {"6776621908", "6745814650"}
+TRACKED_GAME_IDS = {"1517783697", "1599719154", "1606356401"}
 FIELDS = (
     "snapshot_id", "retrieved_at_utc", "country", "store", "feed_type",
     "genre", "genre_id", "requested_depth", "snapshot_depth", "tracked_app_ids_found", "position", "position_semantics",
