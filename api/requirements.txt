@@ -1,0 +1,1 @@
+# Apple RSS collector uses only the Python standard library.

@@ -1,5 +1,60 @@
 import { useState } from "react";
 
+type Ranking = { country: string; genre: string; rank: number; title: string; app_id: string; retrieved_at_utc: string };
+type ChartStatus = { genre: string; status: string; returned_count: number; error: string };
+type Collection = { rankings: Ranking[]; statuses: ChartStatus[]; rankings_csv: string; statuses_csv: string };
+
+function downloadCsv(name: string, contents: string) {
+  const url = URL.createObjectURL(new Blob([contents], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function AppleDevCollection() {
+  const [token, setToken] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<Collection | null>(null);
+  const [error, setError] = useState("");
+  async function run() {
+    setLoading(true); setError(""); setResult(null);
+    try {
+      const response = await fetch("/api/dev/apple-collect", {
+        method: "POST", headers: { "X-Dev-Token": token },
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || `Collection failed (${response.status})`);
+      setResult(body as Collection);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Collection failed");
+    } finally { setLoading(false); }
+  }
+  return (
+    <section className="panel dev-panel" aria-label="Developer Apple RSS collection">
+      <div className="panel-heading"><div><h2>Developer · Apple RSS collection</h2><p>Singapore · Top Free · Top 20 · Four genres</p></div><span className="panel-status">Manual test</span></div>
+      <div className="dev-body">
+        <p className="dev-note">Fetch real rankings for verification. No data is saved to Supabase, Google Sheets or Tableau.</p>
+        <label htmlFor="dev-token">Dev collection token (configured in Vercel)</label>
+        <input id="dev-token" type="password" value={token} onChange={event => setToken(event.target.value)} autoComplete="off" placeholder="Enter token" />
+        <button className="dev-run" type="button" disabled={!token || loading} onClick={run}>{loading ? "Collecting…" : "Run Collection"}</button>
+        {error && <p className="dev-error" role="alert">{error}</p>}
+        {result && <div className="dev-results">
+          <p className="dev-note">Received {result.rankings.length} ranking rows. Check individual chart statuses below.</p>
+          <div className="dev-status-grid">{result.statuses.map(s => <div className="dev-status" key={s.genre}><strong>{s.genre}</strong><span>{s.status} · {s.returned_count} rows</span>{s.error && <small>{s.error}</small>}</div>)}</div>
+          <div className="dev-actions"><button type="button" onClick={() => downloadCsv("apple_sg_top20_rankings.csv", result.rankings_csv)}>Download rankings CSV</button><button type="button" onClick={() => downloadCsv("apple_sg_chart_statuses.csv", result.statuses_csv)}>Download status CSV</button></div>
+          <div className="dev-table-wrap"><table className="dev-table"><thead><tr><th>Genre</th><th>Rank</th><th>Game</th></tr></thead><tbody>{result.rankings.slice(0, 40).map(row => <tr key={`${row.genre}-${row.rank}-${row.app_id}`}><td>{row.genre}</td><td>{row.rank}</td><td>{row.title}</td></tr>)}</tbody></table></div>
+          {result.rankings.length > 40 && <p className="dev-note">Showing the first 40 rows. Download CSV for all results.</p>}
+        </div>}
+      </div>
+    </section>
+  );
+}
+
+
 type Section = "Overview" | "Steam" | "Apple Markets" | "SQL Analysis";
 
 const sections: Section[] = ["Overview", "Steam", "Apple Markets", "SQL Analysis"];
@@ -92,6 +147,8 @@ export default function App() {
           </div>
           <span className="page-status"><span className="status-dot" /> Data pipeline not connected</span>
         </div>
+
+        {activeSection === "Apple Markets" && <AppleDevCollection />}
 
         <div className="panel-grid">
           {panels[activeSection].map((panel) => (

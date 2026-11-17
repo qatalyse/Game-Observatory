@@ -69,3 +69,27 @@ button { font: inherit; }
   .panel-heading { flex-direction: column; }
   .panel-status { padding: 0; }
 }
+
+/* Temporary developer-only collection UI; dark theme consistent with dashboard. */
+.dev-panel { margin-bottom: 20px; }
+.dev-body { padding: 0 22px 22px; display: grid; justify-items: start; gap: 12px; }
+.dev-body label { color: #b8c6d0; font-size: .8rem; }
+.dev-body input { width: min(100%, 430px); padding: 11px 12px; color: #e3edf2; background: #0b1018; border: 1px solid #405263; border-radius: 5px; }
+.dev-body input:focus-visible { outline: 2px solid #80e12d; }
+.dev-note { margin: 0; color: #91a1af; font-size: .8rem; line-height: 1.6; }
+.dev-run, .dev-actions button { padding: 10px 15px; border-radius: 5px; border: 1px solid #80e12d; background: #80e12d; color: #101820; cursor: pointer; font-size: .82rem; font-weight: 650; }
+.dev-run:disabled { opacity: .45; cursor: not-allowed; }
+.dev-error { color: #ffb4a9; font-size: .8rem; overflow-wrap: anywhere; }
+.dev-results { display: grid; gap: 15px; width: 100%; }
+.dev-status-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+.dev-status { display: flex; flex-direction: column; gap: 5px; background: #101923; border: 1px solid #344354; border-radius: 5px; padding: 12px; font-size: .78rem; overflow-wrap: anywhere; }
+.dev-status strong { color: #80e12d; }
+.dev-status small { color: #ffb4a9; }
+.dev-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.dev-actions button { background: #1d2a36; color: #c8d5de; border-color: #405263; }
+.dev-actions button:hover { border-color: #80e12d; }
+.dev-table-wrap { max-height: 350px; width: 100%; overflow: auto; border: 1px solid #344354; border-radius: 5px; }
+.dev-table { border-collapse: collapse; width: 100%; font-size: .78rem; }
+.dev-table th, .dev-table td { padding: 10px 12px; border-bottom: 1px solid #293746; text-align: left; }
+.dev-table th { color: #80e12d; background: #101923; position: sticky; top: 0; }
+@media (max-width: 760px) { .dev-status-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
