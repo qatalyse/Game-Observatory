@@ -1,0 +1,100 @@
+:root {
+  font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: #a9b4bd;
+  background: #0b1018;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-height: 100%; }
+body { min-width: 320px; }
+
+.site-shell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(ellipse 70% 75% at 73% 48%, rgba(28, 45, 56, .29), transparent 74%),
+    #0b1018;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 94px;
+  padding: 24px clamp(28px, 7vw, 112px);
+  border-bottom: 1px solid #202b36;
+}
+
+.brand-mark {
+  height: 11px;
+  width: 11px;
+  background: #80e12d;
+  transform: rotate(45deg);
+  box-shadow: 0 0 16px rgba(128, 225, 45, .22);
+}
+.site-name {
+  color: #d9e1e6;
+  font-weight: 650;
+  font-size: .88rem;
+  letter-spacing: .045em;
+}
+
+.hero {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 70px clamp(28px, 12vw, 190px);
+}
+.hero-content { max-width: 900px; }
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #8796a4;
+  font-size: .7rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: .22em;
+}
+.eyebrow-line { width: 26px; height: 1px; background: #80e12d; }
+h1 {
+  margin: 26px 0 18px;
+  color: #80e12d;
+  font-size: clamp(3.15rem, 8vw, 6.6rem);
+  font-weight: 740;
+  line-height: 1.05;
+  letter-spacing: -.055em;
+}
+.subtitle {
+  margin: 0;
+  color: #c5ced5;
+  font-size: clamp(1.2rem, 2.7vw, 1.75rem);
+  font-weight: 400;
+  letter-spacing: -.015em;
+}
+.rule { margin: 44px 0 22px; width: 62px; height: 2px; background: #344555; }
+.supporting-copy { margin: 0; font-size: 1rem; color: #7e8f9e; }
+.site-footer {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex-wrap: wrap;
+  min-height: 75px;
+  padding: 22px clamp(28px, 7vw, 112px);
+  border-top: 1px solid #202b36;
+  font-size: .76rem;
+  letter-spacing: .015em;
+  color: #738493;
+}
+.footer-dot { width: 3px; height: 3px; border-radius: 50%; background: #667888; }
+@media (max-width: 600px) {
+  .site-header { min-height: 75px; }
+  .hero { align-items: center; padding-top: 90px; padding-bottom: 100px; }
+  h1 { font-size: clamp(3rem, 14vw, 5rem); }
+  .rule { margin-top: 34px; }
+  .site-footer { gap: 9px; }
+}
