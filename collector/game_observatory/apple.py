@@ -194,9 +194,10 @@ def collect(
     pause_seconds: float = 0,
 ) -> tuple[list[dict], list[dict]]:
     """Collect feeds and apply dynamic Top Grossing snapshot retention."""
+    # None uses configured defaults; an explicitly empty set triggers the Top 10 fallback.
     tracked_ids = {str(v) for v in (tracked_app_ids if tracked_app_ids is not None else TRACKED_GAME_IDS)}
-    if not tracked_ids:
-        raise ValueError("At least one tracked App Store ID must be configured")
+    if any(not value.isdigit() for value in tracked_ids):
+        raise ValueError("Tracked App Store IDs must contain digits only")
     requests = [(country, feed_type, genre) for country in countries
                 for feed_type in feed_types for genre in genres]
 
