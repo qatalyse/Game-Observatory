@@ -10,7 +10,7 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "collector"))
-from game_observatory.apple import collect, CHARTS, GENRES  # noqa: E402
+from game_observatory.apple import collect, CHARTS, GENRES, MARKETS  # noqa: E402
 
 COMPACT_FIELDS = (
     "position", "position_semantics", "app_id", "title", "developer",
@@ -58,9 +58,12 @@ class handler(BaseHTTPRequestHandler):
             options = json.loads(request_data.decode("utf-8"))
             feed_type = options.get("feed_type", "top-grossing")
             genre = options.get("genre", "games")
+            country = options.get("market", "SG")
             tracked_app_ids = options.get("tracked_app_ids")
             if feed_type not in CHARTS or genre not in GENRES:
                 return self.respond(400, {"error": "Unsupported feed type or genre"})
+            if country not in MARKETS:
+                return self.respond(400, {"error": "Unsupported Apple storefront"})
             if tracked_app_ids is not None:
                 if not isinstance(tracked_app_ids, list) or len(tracked_app_ids) > 100:
                     return self.respond(400, {"error": "tracked_app_ids must be a list of at most 100 App Store IDs"})
@@ -73,7 +76,7 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             rows, statuses = collect(
-                countries=("SG",), genres=(genre,),
+                countries=(country,), genres=(genre,),
                 feed_types=(feed_type,), depth=50 if feed_type == "top-grossing" else 20,
                 tracked_app_ids=set(tracked_app_ids) if tracked_app_ids is not None else None,
             )
@@ -85,6 +88,7 @@ class handler(BaseHTTPRequestHandler):
         self.respond(200, {
             "feed_type": CHARTS[feed_type],
             "genre": genre,
+            "country": country,
             "rankings": compact_rows,
             "statuses": statuses,
             "request_count": 1,
