@@ -32,12 +32,12 @@ function TableauDashboard() {
           <h2>Apple Top Grossing - Adventure</h2>
           <p>Game Market Data Analytics - Tableau Public</p>
         </div>
-        <a className="apple-store-link" href="https://public.tableau.com/views/GameMarketDataanalytics/Sheet1" target="_blank" rel="noreferrer">Open in Tableau Public</a>
+        <a className="apple-store-link" href="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1" target="_blank" rel="noreferrer">Open in Tableau Public</a>
       </div>
       <div style={{ background: "#111827", borderRadius: "12px", padding: "12px", overflow: "hidden" }}>
         <iframe
           title="Game Observatory - Apple Top Grossing Adventure Rankings"
-          src="https://public.tableau.com/views/GameMarketDataanalytics/Sheet1?:showVizHome=no&:embed=yes&:toolbar=yes"
+          src="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1?:showVizHome=no&:embed=yes&:toolbar=yes"
           loading="lazy"
           allowFullScreen
           style={{ display: "block", width: "100%", height: "min(78vh, 820px)", minHeight: "560px", border: 0, background: "#111827" }}
