@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SteamDevCollection from "./SteamDevCollection";
 
 type Ranking = {
   position: number; position_semantics: string; app_id: string; title: string;
@@ -282,6 +283,7 @@ export default function App() {
 
         {activeSection === "Apple Markets" && <AppleDevCollection />}
         {activeSection === "SQL Analysis" && <TableauDashboard />}
+        {activeSection === "Steam" && <SteamDevCollection />}
 
         <div className="panel-grid">
           {panels[activeSection].map((panel) => (

@@ -7,6 +7,7 @@ __pycache__/
 .pytest_cache/
 *.py[cod]
 node_modules/
+.npm-cache/
 dist/
 *.csv
 *.parquet

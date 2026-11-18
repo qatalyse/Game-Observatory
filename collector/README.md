@@ -1,5 +1,14 @@
 # M1B-Apple — legacy Apple RSS diagnostics
 
+## Steam concurrent-player diagnostics
+
+The independent `game_observatory.steam` module checks the nine configured Steam
+apps manually using the official Steam Web API. Run all nine with
+`python -m game_observatory.steam`, or pass `--app-ids 3513350,413150` for a subset.
+It prints JSON with per-app counts, explicit unavailable/error outcomes and UTC
+retrieval times; no files or database records are written. See the complete
+[Steam setup and response contract](../docs/STEAM_DIAGNOSTICS.md).
+
 ## Manual Adventure Top 50 test dataset
 
 Open **Actions → Extract Apple Adventure test dataset → Run workflow**.

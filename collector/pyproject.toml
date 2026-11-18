@@ -1,12 +1,13 @@
 [project]
 name = "game-observatory-collector"
 version = "0.1.0"
-description = "Storage-independent Apple App Store chart collection"
+description = "Storage-independent Apple chart and Steam player diagnostics"
 requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
 game-observatory-apple = "game_observatory.apple:main"
+game-observatory-steam = "game_observatory.steam:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -6,11 +6,19 @@
   "framework": null,
   "rewrites": [
     {
+      "source": "/api/dev/steam-collect",
+      "destination": "/api/steam_collect.py"
+    },
+    {
       "source": "/api/dev/apple-collect",
       "destination": "/api/index.py"
     }
   ],
   "functions": {
+    "api/steam_collect.py": {
+      "maxDuration": 60,
+      "includeFiles": "collector/game_observatory/**"
+    },
     "api/index.py": {
       "maxDuration": 60
     }

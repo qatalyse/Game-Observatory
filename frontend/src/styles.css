@@ -139,3 +139,17 @@ button { font: inherit; }
   .apple-result-overview { align-items:flex-start; }
   .apple-result-count strong { font-size:1.4rem; }
 }
+.steam-table { min-width: 740px; }
+.steam-table caption { padding: 10px 12px; text-align: left; color: #aab9c4; }
+.steam-table small { color: #91a1af; }
+.steam-table time { font-size: .72rem; white-space: nowrap; }
+.steam-player-count { color: #80e12d; font-weight: 700; font-variant-numeric: tabular-nums; }
+.steam-games-control { width: 100%; min-width: 0; margin: 0; padding: 16px; border: 1px solid #405263; border-radius: 6px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+.steam-games-control legend { padding: 0 6px; color: #c8d5de; }
+.steam-games-control .dev-actions, .steam-games-control .dev-note { grid-column: 1 / -1; }
+.steam-games-control .tracked-game-option { display: flex; align-items: center; gap: 10px; min-width: 0; cursor: pointer; }
+.steam-games-control .tracked-game-option input { width: 16px; height: 16px; flex: 0 0 16px; margin: 0; padding: 0; accent-color: #80e12d; }
+.steam-games-control .tracked-game-option span { display: grid; gap: 3px; }
+.steam-games-control .tracked-game-option small { color: #91a1af; font-size: .7rem; }
+@media (max-width: 760px) { .steam-games-control { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 480px) { .steam-games-control { grid-template-columns: minmax(0,1fr); } }

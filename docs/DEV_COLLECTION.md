@@ -1,5 +1,9 @@
 # Manual Apple legacy RSS diagnostics on Vercel
 
+For the separate token-protected Steam endpoint and selected-game panel, see
+[Steam concurrent-player diagnostics](STEAM_DIAGNOSTICS.md). Both use the
+server-side `DEV_COLLECT_TOKEN`; neither writes to a database or runs on a schedule.
+
 The Apple Markets developer panel now tests exactly one selected feed/category
 per invocation. This isolates unsupported endpoints and avoids oversized
 responses or long batches.

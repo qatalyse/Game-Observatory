@@ -15,7 +15,14 @@ Steam / Apple public APIs and feeds
   -> React/TypeScript website deployed to Vercel
 ```
 
-The collector, scheduler, frontend, read-only API, and Tableau export are **not implemented in M1A**. Tableau Public does not provide the planned live PostgreSQL database connection; extract publication will be designed separately.
+The flow above is planned. The current React frontend hosts manual Apple RSS
+and [Steam concurrent-player diagnostics](STEAM_DIAGNOSTICS.md), backed by
+storage-independent Python modules and token-protected Vercel POST endpoints.
+They do not write to the schema or run on a schedule. Steam makes one official
+GetNumberOfCurrentPlayers request per selected app (up to nine) and keeps failures
+separate from valid zero counts. Database ingestion, scheduling, historical API
+reads and Tableau exports remain future work. Tableau Public does not provide
+the planned live PostgreSQL connection; extract publication will be designed separately.
 
 ## Schemas
 
