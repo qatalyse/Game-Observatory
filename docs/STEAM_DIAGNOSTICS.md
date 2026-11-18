@@ -1,6 +1,6 @@
 # Manual Steam concurrent-player diagnostics
 
-This diagnostic checks the nine configured Steam apps on demand. It uses the
+This diagnostic checks the eleven configured Steam apps on demand. It uses the
 official [ISteamUserStats/GetNumberOfCurrentPlayers/v1](https://partner.steamgames.com/doc/webapi/ISteamUserStats#GetNumberOfCurrentPlayers)
 method via the public Steam Web API host:
 
@@ -27,6 +27,8 @@ or a measurement timestamp; UTC timestamps record our retrieval attempts.
 | inZOI | 2456740 |
 | Loftia | 2320980 |
 | Stardew Valley | 413150 |
+| The Sims 4 | 1222670 |
+| The Sims 3 | 47890 |
 
 These user-selected mappings are configured in `collector/game_observatory/steam.py`
 and mirrored in `frontend/src/SteamDevCollection.tsx`; a test checks the mapping.
@@ -37,7 +39,7 @@ or has no players. We do not infer release state from this endpoint.
 
 1. Set the server-side `DEV_COLLECT_TOKEN` environment variable in Vercel and
    redeploy. Use a strong secret; never give it a `VITE_` prefix.
-2. Open **Steam**, enter the token, and select any of the nine games.
+2. Open **Steam**, enter the token, and select any of the eleven games.
 3. Click **Check selected games**. At least one game and a token are required.
 4. Inspect each game's count, status, HTTP/Steam result codes and UTC time.
 
@@ -62,7 +64,7 @@ curl -X POST 'https://YOUR-DEPLOYMENT/api/dev/steam-collect' \
 ```
 
 `app_ids` is required: a non-empty JSON array of unique **string** IDs from the
-catalogue, maximum nine. Unknown IDs, duplicates, numeric values, null, malformed
+catalogue, maximum eleven. Unknown IDs, duplicates, numeric values, null, malformed
 JSON, negative/invalid content lengths, transfer encoding and extra object keys
 are rejected before collection. The body limit is 2,048 bytes.
 
@@ -113,7 +115,7 @@ no database, Steam key or third-party Python packages required:
 
 ```bash
 cd collector
-python -m game_observatory.steam                        # all nine apps
+python -m game_observatory.steam                        # all eleven apps
 python -m game_observatory.steam --app-ids 3513350,413150 # selected apps
 python -m unittest discover -s tests -v
 ```
