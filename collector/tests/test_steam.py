@@ -22,13 +22,14 @@ class SteamTests(unittest.TestCase):
             "3513350": "Wuthering Waves", "4125930": "Punishing Gray Raven",
             "2064650": "Tower of Fantasy", "4508340": "Neverness to Everness",
             "2456740": "inZOI", "2320980": "Loftia", "413150": "Stardew Valley",
+            "1222670": "The Sims 4", "47890": "The Sims 3",
         }
         self.assertEqual(steam.GAMES, expected)
         frontend = (Path(__file__).resolve().parents[2] / "frontend/src/SteamDevCollection.tsx").read_text(encoding="utf-8")
         for app_id, name in expected.items():
             self.assertIn(f'{{ id: "{app_id}", name: "{name}" }}', frontend)
 
-    def test_all_nine_one_request_each_order_and_provenance(self):
+    def test_all_eleven_one_request_each_order_and_provenance(self):
         calls = []
         lock = threading.Lock()
         clock = lambda: datetime(2026, 11, 18, tzinfo=timezone.utc)
@@ -40,13 +41,13 @@ class SteamTests(unittest.TestCase):
 
         result = steam.collect(fetch=fetch, clock=clock)
         rows = result["results"]
-        self.assertEqual(len(calls), 9)
+        self.assertEqual(len(calls), len(steam.GAMES))
         self.assertEqual(set(calls), {steam.player_url(app_id) for app_id in steam.GAMES})
         self.assertEqual([row["app_id"] for row in rows], list(steam.GAMES))
-        self.assertEqual(result["request_count"], 9)
-        self.assertEqual(result["success_count"], 9)
+        self.assertEqual(result["request_count"], len(steam.GAMES))
+        self.assertEqual(result["success_count"], len(steam.GAMES))
         self.assertEqual(result["status"], "ok")
-        self.assertEqual(len({row["snapshot_id"] for row in rows}), 9)
+        self.assertEqual(len({row["snapshot_id"] for row in rows}), len(steam.GAMES))
         for row in rows:
             self.assertEqual(row["run_id"], result["run_id"])
             self.assertEqual(row["retrieved_at_utc"], "2026-11-18T00:00:00+00:00")
