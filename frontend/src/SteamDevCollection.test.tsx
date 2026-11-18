@@ -27,7 +27,7 @@ describe("Steam manual diagnostics", () => {
     render(<App />);
     expect(screen.queryByRole("region", { name: "Steam concurrent-player diagnostics" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Steam" }));
-    expect(screen.getAllByRole("checkbox")).toHaveLength(9);
+    expect(screen.getAllByRole("checkbox")).toHaveLength(11);
     expect(screen.getAllByRole<HTMLInputElement>("checkbox").every(input => input.checked)).toBe(true);
     expect((screen.getByRole("button", { name: "Check selected games" }) as HTMLButtonElement).disabled).toBe(true);
     await enterToken();
@@ -36,6 +36,12 @@ describe("Steam manual diagnostics", () => {
     await userEvent.click(screen.getByRole("button", { name: "Select all games" }));
     expect((screen.getByRole("button", { name: "Check selected games" }) as HTMLButtonElement).disabled).toBe(false);
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("includes both Sims games exactly once in the tracked roster", () => {
+    expect(steamGames.filter(game => game.id === "1222670")).toEqual([{ id: "1222670", name: "The Sims 4" }]);
+    expect(steamGames.filter(game => game.id === "47890")).toEqual([{ id: "47890", name: "The Sims 3" }]);
+    expect(new Set(steamGames.map(game => game.id)).size).toBe(11);
   });
 
   it("submits only selected IDs with the token in a header and renders zero versus missing counts", async () => {
