@@ -280,7 +280,7 @@ export default function App() {
           <div>
             <h1>{activeSection}</h1>
             <p>{activeSection === "Overview"
-              ? "Overview and Tableau visualizations based on Steam and App store data"
+              ? "Tableau visualizations based on Steam and App store data"
               : activeSection === "Steam"
                 ? "Player activity, public reviews, and achievements."
                 : "App Store ranking observations across markets."}
