@@ -20,6 +20,8 @@ GAMES = {
     "2456740": "inZOI",
     "2320980": "Loftia",
     "413150": "Stardew Valley",
+    "1222670": "The Sims 4",
+    "47890": "The Sims 3",
 }
 SOURCE = "steam_web_api_get_number_of_current_players"
 ENDPOINT = "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
@@ -36,7 +38,7 @@ class InvalidResponse(ValueError):
 def validate_app_ids(app_ids: object) -> tuple[str, ...]:
     """Reject invalid/duplicate IDs before making any upstream requests."""
     if not isinstance(app_ids, (list, tuple)) or not 1 <= len(app_ids) <= len(GAMES):
-        raise ValueError("app_ids must be a non-empty list of at most nine configured Steam App IDs")
+        raise ValueError(f"app_ids must be a non-empty list of at most {len(GAMES)} configured Steam App IDs")
     if any(not isinstance(value, str) or value not in GAMES for value in app_ids):
         raise ValueError("Each app_id must be a configured Steam App ID string")
     if len(set(app_ids)) != len(app_ids):
@@ -153,7 +155,7 @@ def collect(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--app-ids", help="Comma-separated configured Steam App IDs; defaults to all nine")
+    parser.add_argument("--app-ids", help="Comma-separated configured Steam App IDs; defaults to all configured games")
     args = parser.parse_args(argv)
     try:
         selected = validate_app_ids(args.app_ids.split(",")) if args.app_ids is not None else None
