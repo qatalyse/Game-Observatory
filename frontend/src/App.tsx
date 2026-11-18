@@ -31,7 +31,11 @@ function TableauDashboard() {
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const fitDashboard = () => setFrameScale(Math.min(1, viewport.getBoundingClientRect().width / 1000));
+    // Preserve the published 1000px canvas while filling the available page width.
+    const fitDashboard = () => {
+      const width = viewport.getBoundingClientRect().width;
+      if (width > 0) setFrameScale(width / 1000);
+    };
     fitDashboard();
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(fitDashboard);
@@ -214,10 +218,7 @@ type PanelInfo = {
   emptyLabel: string;
 };
 
-const panels: Record<Section, PanelInfo[]> = {
-  Overview: [
-    { title: "SQL case studies", description: "Analytical questions, PostgreSQL queries, and findings.", emptyLabel: "Case studies will appear after data validation" },
-  ],
+const panels: Record<Exclude<Section, "Overview">, PanelInfo[]> = {
   Steam: [
     { title: "Concurrent players", description: "Historical measurements from selected Steam games.", emptyLabel: "No player snapshots collected yet" },
     { title: "Reviews and achievements", description: "Trends derived from public Steam records.", emptyLabel: "No review or achievement data yet" },
@@ -294,14 +295,7 @@ export default function App() {
         {activeSection === "Steam" && <SteamDevCollection />}
 
         {activeSection === "Overview" ? (
-          <div className="sql-analysis-layout">
-            <TableauDashboard />
-            <div className="sql-case-studies">
-              {panels.Overview.map((panel) => (
-                <DashboardPanel key={panel.title} {...panel} />
-              ))}
-            </div>
-          </div>
+          <TableauDashboard />
         ) : (
           <div className="panel-grid">
             {panels[activeSection].map((panel) => (
