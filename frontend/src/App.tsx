@@ -34,16 +34,16 @@ function TableauDashboard() {
         </div>
         <a className="apple-store-link" href="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1" target="_blank" rel="noreferrer">Open in Tableau Public</a>
       </div>
-      <div style={{ background: "#111827", borderRadius: "12px", padding: "12px", overflow: "hidden" }}>
+      <div className="tableau-viewport">
         <iframe
+          className="tableau-frame"
           title="Game Observatory - Apple Top Grossing Adventure Rankings"
-          src="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1?:showVizHome=no&:embed=yes&:toolbar=yes"
+          src="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1?:showVizHome=no&:embed=yes&:toolbar=no&:tabs=no"
           loading="lazy"
           allowFullScreen
-          style={{ display: "block", width: "100%", height: "min(78vh, 820px)", minHeight: "560px", border: 0, background: "#111827" }}
+          scrolling="no"
         />
       </div>
-      <p className="dev-note">Tableau controls and chart colors are managed by Tableau Public; the surrounding panel follows Game Observatory's dark theme.</p>
     </section>
   );
 }
@@ -282,14 +282,24 @@ export default function App() {
         </div>
 
         {activeSection === "Apple Markets" && <AppleDevCollection />}
-        {activeSection === "SQL Analysis" && <TableauDashboard />}
         {activeSection === "Steam" && <SteamDevCollection />}
 
-        <div className="panel-grid">
-          {panels[activeSection].map((panel) => (
-            <DashboardPanel key={panel.title} {...panel} />
-          ))}
-        </div>
+        {activeSection === "SQL Analysis" ? (
+          <div className="sql-analysis-layout">
+            <TableauDashboard />
+            <div className="sql-case-studies">
+              {panels["SQL Analysis"].map((panel) => (
+                <DashboardPanel key={panel.title} {...panel} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="panel-grid">
+            {panels[activeSection].map((panel) => (
+              <DashboardPanel key={panel.title} {...panel} />
+            ))}
+          </div>
+        )}
       </main>
 
       <footer className="site-footer">
