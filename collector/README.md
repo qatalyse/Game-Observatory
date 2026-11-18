@@ -120,3 +120,11 @@ These feeds are legacy Apple-hosted endpoints and their support/availability
 is not guaranteed. Test current HTTP responses, field coverage and category
 filter behavior before relying on them. Apple chart data is a retrieval-time
 sample; the source does not provide historical snapshots.
+
+## Manual HoYoverse targeted tracker
+
+The additional **Export HoYoverse Apple targeted rankings** manual workflow
+matches configured App IDs in Adventure and Role-Playing Top Grossing charts
+across all ten markets. It exports one game record per target and separate
+chart statuses, including unknowns and errors. See the [roster, CSV contract
+and status rules](../docs/APPLE_HOYOVERSE_TRACKER.md).

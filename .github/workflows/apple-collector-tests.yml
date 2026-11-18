@@ -5,11 +5,13 @@ on:
       - "collector/**"
       - ".github/workflows/apple-collector-tests.yml"
       - ".github/workflows/apple-test-dataset.yml"
+      - ".github/workflows/apple-hoyoverse-targeted.yml"
   pull_request:
     paths:
       - "collector/**"
       - ".github/workflows/apple-collector-tests.yml"
       - ".github/workflows/apple-test-dataset.yml"
+      - ".github/workflows/apple-hoyoverse-targeted.yml"
 jobs:
   test:
     runs-on: ubuntu-latest
