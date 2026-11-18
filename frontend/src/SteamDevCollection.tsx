@@ -12,6 +12,7 @@ export const steamGames = [
   { id: "413150", name: "Stardew Valley" },
   { id: "1222670", name: "The Sims 4" },
   { id: "47890", name: "The Sims 3" },
+  { id: "3314070", name: "The Sims 2 Legacy Collection" },
 ];
 
 type PlayerResult = {
@@ -61,7 +62,7 @@ export default function SteamDevCollection() {
   return (
     <section className="panel dev-panel" aria-label="Steam concurrent-player diagnostics">
       <div className="panel-heading">
-        <div><h2>Steam · Current players</h2><p>Manual diagnostics for eleven selected Steam titles</p></div>
+        <div><h2>Steam · Current players</h2><p>Manual diagnostics for twelve selected Steam titles</p></div>
         <span className="panel-status">On demand</span>
       </div>
       <div className="dev-body">
