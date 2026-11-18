@@ -130,7 +130,7 @@ class TestDatasetCliTests(unittest.TestCase):
             self.assertTrue(collector.call_args.kwargs["full_chart"])
             self.assertEqual(collector.call_args.kwargs["genres"], ("adventure",))
             self.assertEqual(collector.call_args.kwargs["feed_types"], ("top-grossing",))
-            self.assertEqual(collector.call_args.kwargs["depth"], 50)
+            self.assertEqual(collector.call_args.kwargs["depth"], 100)
             self.assertEqual(sorted(p.name for p in Path(directory).iterdir()),
                              ["apple_rankings.csv", "apple_statuses.csv"])
             data = []

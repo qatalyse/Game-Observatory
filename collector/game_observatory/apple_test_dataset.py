@@ -20,7 +20,7 @@ def main(argv: list[str] | None = None) -> int:
         countries=MARKETS,
         genres=("adventure",),
         feed_types=("top-grossing",),
-        depth=50,
+        depth=100,
         full_chart=True,
         pause_seconds=0.25,
     )
@@ -31,7 +31,7 @@ def main(argv: list[str] | None = None) -> int:
         "collection_mode": "full_chart",
         "markets": list(MARKETS),
         "genre_id": 7002,
-        "requested_depth": 50,
+        "requested_depth": 100,
         "observations": len(rows),
         "feed_requests": len(statuses),
         "statuses": {state: sum(s["status"] == state for s in statuses)
