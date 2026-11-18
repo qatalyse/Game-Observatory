@@ -203,9 +203,9 @@ function AppleDevCollection() {
 
 
 
-type Section = "Overview" | "Steam" | "Apple Markets" | "SQL Analysis";
+type Section = "Overview" | "Steam" | "Apple Markets";
 
-const sections: Section[] = ["Overview", "Steam", "Apple Markets", "SQL Analysis"];
+const sections: Section[] = ["Overview", "Steam", "Apple Markets"];
 
 type PanelInfo = {
   title: string;
@@ -215,8 +215,7 @@ type PanelInfo = {
 
 const panels: Record<Section, PanelInfo[]> = {
   Overview: [
-    { title: "Steam activity", description: "Concurrent player trends and review activity.", emptyLabel: "Awaiting Steam observations" },
-    { title: "Apple market rankings", description: "Rank movements across supported storefronts.", emptyLabel: "Awaiting Apple chart snapshots" },
+    { title: "SQL case studies", description: "Analytical questions, PostgreSQL queries, and findings.", emptyLabel: "Case studies will appear after data validation" },
   ],
   Steam: [
     { title: "Concurrent players", description: "Historical measurements from selected Steam games.", emptyLabel: "No player snapshots collected yet" },
@@ -225,9 +224,6 @@ const panels: Record<Section, PanelInfo[]> = {
   "Apple Markets": [
     { title: "Rank history", description: "Compare observed chart positions across countries.", emptyLabel: "No historical ranking snapshots yet" },
     { title: "Market comparisons", description: "Chart persistence and changes over time.", emptyLabel: "No market comparisons available yet" },
-  ],
-  "SQL Analysis": [
-    { title: "SQL case studies", description: "Analytical questions, PostgreSQL queries, and findings.", emptyLabel: "Case studies will appear after data validation" },
   ],
 };
 
@@ -284,12 +280,10 @@ export default function App() {
           <div>
             <h1>{activeSection}</h1>
             <p>{activeSection === "Overview"
-              ? "A view of gaming activity and market trends."
+              ? "Overview and Tableau visualizations based on Steam and App store data"
               : activeSection === "Steam"
                 ? "Player activity, public reviews, and achievements."
-                : activeSection === "Apple Markets"
-                  ? "App Store ranking observations across markets."
-                  : "Queries and Tableau visualizations backed by real data."}
+                : "App Store ranking observations across markets."}
             </p>
           </div>
           <span className="page-status"><span className="status-dot" /> Data pipeline not connected</span>
@@ -298,11 +292,11 @@ export default function App() {
         {activeSection === "Apple Markets" && <AppleDevCollection />}
         {activeSection === "Steam" && <SteamDevCollection />}
 
-        {activeSection === "SQL Analysis" ? (
+        {activeSection === "Overview" ? (
           <div className="sql-analysis-layout">
             <TableauDashboard />
             <div className="sql-case-studies">
-              {panels["SQL Analysis"].map((panel) => (
+              {panels.Overview.map((panel) => (
                 <DashboardPanel key={panel.title} {...panel} />
               ))}
             </div>
