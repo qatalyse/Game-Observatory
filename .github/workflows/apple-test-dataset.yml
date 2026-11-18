@@ -38,23 +38,23 @@ jobs:
           with (output / "apple_statuses.csv").open(encoding="utf-8", newline="") as handle:
               statuses = list(csv.DictReader(handle))
           assert [s["country"] for s in statuses] == list(MARKETS)
-          assert len(rows) <= 500
+          assert len(rows) <= 1000
           counts = Counter(r["country"] for r in rows)
           assert set(counts) <= set(MARKETS)
           for status in statuses:
               market_rows = [r for r in rows if r["country"] == status["country"]]
               count = int(status["returned_count"])
-              assert count == counts[status["country"]] <= 50
+              assert count == counts[status["country"]] <= 100
               assert count == int(status["source_count"]) == int(status["snapshot_depth"])
               assert status["status"] in {"ok", "partial", "empty", "error"}
-              assert (status["status"] == "ok") == (count == 50)
-              assert (status["status"] == "partial") == (0 < count < 50)
+              assert (status["status"] == "ok") == (count == 100)
+              assert (status["status"] == "partial") == (0 < count < 100)
               assert [int(r["position"]) for r in market_rows] == list(range(1, count + 1))
               assert all(r["snapshot_id"] == status["snapshot_id"] for r in market_rows)
           assert all(r["feed_type"] == "topgrossingapplications" and r["genre_id"] == "7002"
-                     and r["requested_depth"] == "50" for r in rows + statuses)
-          lines = ["## Apple Adventure Top 50 test dataset", "",
-                   f"Fetched ranking rows: {len(rows)} / 500. Market statuses: {len(statuses)} / 10.", "",
+                     and r["requested_depth"] == "100" for r in rows + statuses)
+          lines = ["## Apple Adventure Top 100 test dataset", "",
+                   f"Fetched ranking rows: {len(rows)} / 1000. Market statuses: {len(statuses)} / 10.", "",
                    "| Market | Status | Fetched rows | HTTP |", "| --- | --- | ---: | --- |"]
           lines += [f"| {s['country']} | {s['status']} | {s['returned_count']} | {s['http_status']} |"
                     for s in statuses]
@@ -69,7 +69,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: apple-adventure-top50-rankings
+          name: apple-adventure-top100-rankings
           path: collector/data/apple-test/apple_rankings.csv
           if-no-files-found: error
           retention-days: 30
@@ -77,7 +77,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: apple-adventure-top50-statuses
+          name: apple-adventure-top100-statuses
           path: collector/data/apple-test/apple_statuses.csv
           if-no-files-found: error
           retention-days: 30
