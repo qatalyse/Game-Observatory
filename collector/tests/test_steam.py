@@ -23,13 +23,14 @@ class SteamTests(unittest.TestCase):
             "2064650": "Tower of Fantasy", "4508340": "Neverness to Everness",
             "2456740": "inZOI", "2320980": "Loftia", "413150": "Stardew Valley",
             "1222670": "The Sims 4", "47890": "The Sims 3",
+            "3314070": "The Sims 2 Legacy Collection",
         }
         self.assertEqual(steam.GAMES, expected)
         frontend = (Path(__file__).resolve().parents[2] / "frontend/src/SteamDevCollection.tsx").read_text(encoding="utf-8")
         for app_id, name in expected.items():
             self.assertIn(f'{{ id: "{app_id}", name: "{name}" }}', frontend)
 
-    def test_all_eleven_one_request_each_order_and_provenance(self):
+    def test_all_twelve_one_request_each_order_and_provenance(self):
         calls = []
         lock = threading.Lock()
         clock = lambda: datetime(2026, 11, 18, tzinfo=timezone.utc)
