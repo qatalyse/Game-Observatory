@@ -2,12 +2,29 @@
 
 ## Steam concurrent-player diagnostics
 
-The independent `game_observatory.steam` module checks the nine configured Steam
-apps manually using the official Steam Web API. Run all nine with
+The independent `game_observatory.steam` module checks the configured Steam
+apps manually using the official Steam Web API. Run all tracked games with
 `python -m game_observatory.steam`, or pass `--app-ids 3513350,413150` for a subset.
 It prints JSON with per-app counts, explicit unavailable/error outcomes and UTC
 retrieval times; no files or database records are written. See the complete
 [Steam setup and response contract](../docs/STEAM_DIAGNOSTICS.md).
+
+## Manual Steam current-player CSV export
+
+Open **Actions → Export Steam player test dataset → Run workflow**.
+This separate manual workflow uses the existing Steam collector for every
+configured game (currently twelve) and uploads two artifacts for 30 days:
+`steam-current-players` (`steam_players.csv`, successful observations only)
+and `steam-player-statuses` (`steam_statuses.csv`, every game and any errors).
+Valid zeroes remain zero; failed/unavailable counts are blank. Both files
+remain downloadable when individual game requests fail. The workflow runs on
+GitHub's hosted runner, without a local checkout, scheduling or database writes.
+See [the export contract and instructions](../docs/STEAM_DIAGNOSTICS.md#manual-steam-csv-export-in-github-actions).
+
+```bash
+cd collector
+python -m game_observatory.steam_test_dataset --output data/steam-test
+```
 
 ## Manual Adventure Top 50 test dataset
 

@@ -109,6 +109,51 @@ It makes exactly one attempt per app, with no retries; one app's failure cannot
 discard other results. The browser stops waiting after 55 seconds. This is a
 diagnostic, so transient failures should be retried manually.
 
+## Manual Steam CSV export in GitHub Actions
+
+Open **Actions → Export Steam player test dataset → Run workflow**, select
+`main`, then select **Run workflow**. The export executes on GitHub's hosted
+runner; it does not need a local checkout, Steam API key, Vercel token or database
+credentials. It requests the current player count once for every configured game
+(currently twelve) using the existing Steam collector.
+
+Download the two artifacts from the completed run page (retained for 30 days):
+
+- `steam-current-players` contains `steam_players.csv`: one row per successful
+  Steam observation, including observed zero counts. Maximum one row per game.
+- `steam-player-statuses` contains `steam_statuses.csv`: one outcome per
+  configured game, including HTTP, timeout, parse and unavailable outcomes.
+
+Both files share `snapshot_id`, `run_id`, `app_id`, `title`, `player_count`,
+`started_at_utc`, `retrieved_at_utc`, `source` and `source_url`. The statuses
+file additionally includes `http_status`, `steam_result`, `status`,
+`error_code` and `error`. Join the files on `snapshot_id`; `run_id` identifies
+the whole collection. All retrieval times are UTC. Failed/unavailable player
+counts are blank CSV cells, never fabricated zeroes.
+
+The separate `game_observatory.steam_test_dataset` entry point reuses
+`steam.collect()` and leaves the existing diagnostic CLI, endpoint and frontend
+unchanged. It always writes both CSVs after collection, including a header-only
+players file when no app provides data. Unavailable Steam results are recorded
+without failing the export. Actual request/parse errors produce exit code 1
+after the CSVs are written. Verification and both artifact uploads run even
+when collection reports errors, so failed runs can still provide diagnostics.
+The run summary validates CSV headers, catalogue coverage, IDs, timestamps,
+observed counts and matching status records, then lists each game's outcome.
+
+The export workflow has only `workflow_dispatch`: no schedule, push-triggered
+Steam requests, database writes or repository data commits. Ordinary CI stays
+offline and exercises success, zero, unavailable, mixed/all-error, malformed
+response and CSV quoting/overwrite fixtures. This exports a current sample; it
+does not obtain historical counts or publish Tableau data.
+
+To run the same export in any Python 3.11+ environment:
+
+```bash
+cd collector
+python -m game_observatory.steam_test_dataset --output data/steam-test
+```
+
 ## Run locally
 
 Python 3.11+ and Node.js 22.12+ (or current 24/26) for the frontend tests;
@@ -144,8 +189,9 @@ catalogue, selection validation, successful/zero/unavailable counts, malformed
 responses, HTTP/rate-limit/network/timeout failures, bounded response reads,
 authentication, direct/rewritten routes, body limits and frontend run controls.
 
-There is no Steam schedule, polling, database connection, migration, persistence
-or Tableau publication in this implementation. The existing schema is untouched.
+There is no Steam schedule, polling, database connection, migration or Tableau
+publication in this implementation. Manual exports persist only as CSV files
+and downloadable Actions artifacts. The existing schema is untouched.
 Historical charts and review/achievement collection remain future work.
 
 ## Verification notes (2026-11-18)

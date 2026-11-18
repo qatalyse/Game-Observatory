@@ -1,0 +1,93 @@
+name: Export Steam player test dataset
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: collector
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test offline fixtures
+        run: python -m unittest discover -s tests -v
+      - name: Collect current players for all configured Steam games
+        run: python -m game_observatory.steam_test_dataset --output data/steam-test
+      - name: Verify CSVs and summarize game outcomes
+        if: always()
+        run: |
+          python - <<'PY'
+          import csv
+          from datetime import datetime
+          import os
+          from pathlib import Path
+          from game_observatory.steam import GAMES
+          from game_observatory.steam_test_dataset import PLAYER_FIELDS, STATUS_FIELDS
+
+          output = Path("data/steam-test")
+          def read_csv(name, fields):
+              with (output / name).open(encoding="utf-8", newline="") as handle:
+                  reader = csv.DictReader(handle)
+                  assert reader.fieldnames == list(fields)
+                  return list(reader)
+          players = read_csv("steam_players.csv", PLAYER_FIELDS)
+          statuses = read_csv("steam_statuses.csv", STATUS_FIELDS)
+          assert [s["app_id"] for s in statuses] == list(GAMES)
+          assert len({s["snapshot_id"] for s in statuses}) == len(GAMES)
+          assert len({s["run_id"] for s in statuses}) == 1
+          expected = [{field: s[field] for field in PLAYER_FIELDS}
+                      for s in statuses if s["status"] == "ok"]
+          assert players == expected
+          for status in statuses:
+              assert status["title"] == GAMES[status["app_id"]]
+              assert status["status"] in {"ok", "unavailable", "error"}
+              for field in ("started_at_utc", "retrieved_at_utc"):
+                  assert datetime.fromisoformat(status[field]).utcoffset().total_seconds() == 0
+              if status["status"] == "ok":
+                  assert int(status["player_count"]) >= 0
+                  assert status["http_status"] == "200"
+                  assert status["steam_result"] == "1"
+                  assert status["error_code"] == status["error"] == ""
+              else:
+                  assert status["player_count"] == ""
+                  assert status["error_code"] and status["error"]
+          lines = ["## Steam concurrent-player export", "",
+                   f"Valid observations: {len(players)} / {len(GAMES)}. Status records: {len(statuses)}.", "",
+                   "| Game | App ID | Status | Current players | HTTP |",
+                   "| --- | --- | --- | ---: | --- |"]
+          lines += [f"| {s['title']} | {s['app_id']} | {s['status']} | {s['player_count'] or '—'} | {s['http_status'] or '—'} |"
+                    for s in statuses]
+          lines += ["", "Steam-connected players only; a retrieval-time sample, not DAU or total audience.",
+                    "Blank counts indicate unavailable/failed requests; observed zero remains 0.",
+                    "Download both CSV artifacts below. Error details are in steam_statuses.csv.",
+                    "No scheduled collection or database writes."]
+          summary = "\n".join(lines) + "\n"
+          print(summary)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
+              handle.write(summary)
+          PY
+      - name: Upload player observations CSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: steam-current-players
+          path: collector/data/steam-test/steam_players.csv
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload per-game statuses CSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: steam-player-statuses
+          path: collector/data/steam-test/steam_statuses.csv
+          if-no-files-found: error
+          retention-days: 30
