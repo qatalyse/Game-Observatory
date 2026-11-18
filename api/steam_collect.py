@@ -10,7 +10,7 @@ import sys
 import traceback
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "collector"))
-from game_observatory.steam import collect, validate_app_ids  # noqa: E402
+from game_observatory.steam import GAMES, collect, validate_app_ids  # noqa: E402
 
 MAX_REQUEST_BYTES = 2048
 PATHS = ("/api/dev/steam-collect", "/api/steam_collect", "/api/steam_collect.py")
@@ -55,7 +55,7 @@ class handler(BaseHTTPRequestHandler):
                 raise ValueError("Expected an object containing only app_ids")
             selected = validate_app_ids(options["app_ids"])
         except (ValueError, UnicodeDecodeError):
-            return self.respond(400, {"error": "Send app_ids as a non-empty list of unique configured Steam App ID strings (maximum nine)."})
+            return self.respond(400, {"error": f"Send app_ids as a non-empty list of unique configured Steam App ID strings (maximum {len(GAMES)})."})
         try:
             result = collect(selected)
         except Exception:
