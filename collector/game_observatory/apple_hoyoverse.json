@@ -1,0 +1,45 @@
+{
+  "requested_depth": 100,
+  "genres": [
+    {
+      "genre": "adventure",
+      "genre_id": 7002,
+      "games": [
+        {
+          "app_id": "1517783697",
+          "title": "Genshin Impact"
+        },
+        {
+          "app_id": "1599719154",
+          "title": "Honkai: Star Rail"
+        }
+      ]
+    },
+    {
+      "genre": "role-playing",
+      "genre_id": 7014,
+      "games": [
+        {
+          "app_id": "1517783697",
+          "title": "Genshin Impact"
+        },
+        {
+          "app_id": "1599719154",
+          "title": "Honkai: Star Rail"
+        },
+        {
+          "app_id": "1606356401",
+          "title": "Zenless Zone Zero"
+        },
+        {
+          "app_id": "1336342304",
+          "title": "Honkai Impact 3rd"
+        },
+        {
+          "app_id": "1517957388",
+          "title": "Tears of Themis"
+        }
+      ]
+    }
+  ]
+}

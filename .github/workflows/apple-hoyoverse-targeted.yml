@@ -1,0 +1,42 @@
+name: Export HoYoverse Apple targeted rankings
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: collector
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test offline fixtures
+        run: python -m unittest discover -s tests -v
+      - name: Collect targeted Top Grossing ranks
+        run: python -m game_observatory.apple_hoyoverse --output data/apple-hoyoverse
+      - name: Upload targeted game observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-hoyoverse-rankings-${{ github.run_id }}-${{ github.run_attempt }}
+          path: collector/data/apple-hoyoverse/apple_hoyoverse_rankings.csv
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload per-chart statuses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-hoyoverse-chart-statuses-${{ github.run_id }}-${{ github.run_attempt }}
+          path: collector/data/apple-hoyoverse/apple_hoyoverse_chart_statuses.csv
+          if-no-files-found: error
+          retention-days: 30
