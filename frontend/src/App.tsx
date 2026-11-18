@@ -42,8 +42,8 @@ function TableauDashboard() {
     <section className="panel tableau-panel" aria-label="Tableau Public dashboard">
       <div className="panel-heading">
         <div>
-          <h2>Apple Top Grossing - Adventure</h2>
-          <p>Game Market Data Analytics - Tableau Public</p>
+          <h2>Gaming Industry Insights</h2>
+          <p>Current display: Concurrent Steam player monitoring | Apple App Store revenue rankings</p>
         </div>
         <a className="apple-store-link" href="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1" target="_blank" rel="noreferrer">Open in Tableau Public</a>
       </div>
