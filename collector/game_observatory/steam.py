@@ -22,6 +22,7 @@ GAMES = {
     "413150": "Stardew Valley",
     "1222670": "The Sims 4",
     "47890": "The Sims 3",
+    "3314070": "The Sims 2 Legacy Collection",
 }
 SOURCE = "steam_web_api_get_number_of_current_players"
 ENDPOINT = "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
