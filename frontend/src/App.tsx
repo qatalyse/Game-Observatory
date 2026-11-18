@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SteamDevCollection from "./SteamDevCollection";
 
 type Ranking = {
@@ -25,6 +25,19 @@ function downloadCsv(name: string, rows: Ranking[]) {
 }
 
 function TableauDashboard() {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [frameScale, setFrameScale] = useState(1);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const fitDashboard = () => setFrameScale(Math.min(1, viewport.getBoundingClientRect().width / 1000));
+    fitDashboard();
+    const observer = new ResizeObserver(fitDashboard);
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section className="panel tableau-panel" aria-label="Tableau Public dashboard">
       <div className="panel-heading">
@@ -34,9 +47,10 @@ function TableauDashboard() {
         </div>
         <a className="apple-store-link" href="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1" target="_blank" rel="noreferrer">Open in Tableau Public</a>
       </div>
-      <div className="tableau-viewport">
+      <div className="tableau-viewport" ref={viewportRef}>
         <iframe
           className="tableau-frame"
+          style={{ transform: `scale(${frameScale})` }}
           title="Game Observatory - Apple Top Grossing Adventure Rankings"
           src="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1?:showVizHome=no&:embed=yes&:toolbar=no&:tabs=no"
           loading="lazy"
