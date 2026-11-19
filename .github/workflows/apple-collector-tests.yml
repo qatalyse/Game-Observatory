@@ -3,15 +3,19 @@ on:
   push:
     paths:
       - "collector/**"
+      - "api/index.py"
       - ".github/workflows/apple-collector-tests.yml"
       - ".github/workflows/apple-test-dataset.yml"
       - ".github/workflows/apple-hoyoverse-targeted.yml"
+      - ".github/workflows/apple-hoyoverse-daily-sheets.yml"
   pull_request:
     paths:
       - "collector/**"
+      - "api/index.py"
       - ".github/workflows/apple-collector-tests.yml"
       - ".github/workflows/apple-test-dataset.yml"
       - ".github/workflows/apple-hoyoverse-targeted.yml"
+      - ".github/workflows/apple-hoyoverse-daily-sheets.yml"
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -25,3 +29,29 @@ jobs:
           python-version: "3.11"
       - name: Test offline fixtures
         run: python -m unittest discover -s tests -v
+  sheets-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install and verify upload-only dependencies and workflow structure
+        run: |
+          python -m pip install -r collector/requirements-sheets.txt "PyYAML>=6,<7"
+          python - <<'PY'
+          from pathlib import Path
+          from google.auth.transport.requests import AuthorizedSession
+          import google.auth
+          import yaml
+          workflow = yaml.load(
+              Path(".github/workflows/apple-hoyoverse-daily-sheets.yml").read_text(),
+              Loader=yaml.BaseLoader,
+          )
+          assert len(workflow["on"]["schedule"][0]["cron"].split()) == 5
+          assert workflow["on"]["workflow_dispatch"]["inputs"]["publish_to_sheets"]["default"] == "false"
+          assert "APPLE_SHEETS_DAILY_ENABLED" in workflow["jobs"]["collect"]["if"]
+          assert workflow["jobs"]["publish"]["permissions"]["id-token"] == "write"
+          assert workflow["concurrency"]["cancel-in-progress"] == "false"
+          print("Upload authentication imports and gated workflow structure verified.")
+          PY

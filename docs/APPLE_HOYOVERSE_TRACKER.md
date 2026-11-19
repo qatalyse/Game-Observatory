@@ -8,30 +8,72 @@ to exist on the default branch before its Run workflow button becomes available.
 The collection trigger is `workflow_dispatch` only.
 
 The dedicated [roster config](../collector/game_observatory/apple_hoyoverse.json)
-controls genre IDs, game IDs/titles and requested depth (default 100). Markets
-come from the existing `apple.MARKETS`: SG, US, JP, KR, CN, MY, TH, ID, PH, VN.
-Genre IDs are validated against existing `apple.GENRES`.
+controls genres, stable game IDs, default listing IDs, market overrides and depth.
+Markets remain SG, US, JP, KR, CN, MY, TH, ID, PH and VN. Genres are checked
+against existing `apple.GENRES`: Adventure (7002) targets Genshin and Star Rail;
+Role-Playing (7014) targets those two plus Zenless Zone Zero, Honkai Impact 3rd
+and Tears of Themis; Action (7001) targets ZZZ and Honkai Impact 3rd.
+No Card or Simulation chart requests are added.
 
-| Chart | App IDs |
-| --- | --- |
-| Adventure (7002) | Genshin Impact 1517783697; Honkai: Star Rail 1599719154 |
-| Role-Playing (7014) | Those two; Zenless Zone Zero 1606356401; Honkai Impact 3rd 1336342304; Tears of Themis 1517957388 |
+## Regional listings (roster version three-genres-five-titles-v4)
 
-Genshin, Star Rail and ZZZ IDs match existing `apple.TRACKED_GAME_IDS` and the
-frontend roster. The other two were absent from existing source/config and are
-explicit additions supplied for this tracker. Apple confirms
-[Honkai Impact 3rd 1336342304](https://apps.apple.com/us/app/honkai-impact-3rd/id1336342304).
-The initially supplied Tears of Themis ID `1425079193` could not be verified.
-Apple's [Tears of Themis listing uses 1517957388](https://apps.apple.com/us/app/tears-of-themis/id1517957388);
-the dedicated roster uses that verified ID, as confirmed by the requester.
-No regional App ID substitution or availability inference is performed. Inclusion is a search target, not a claim
-that a title belongs to or appears in either chart in every market. The entry's
-primary category does not determine its rank in a requested genre chart.
+A game can have different Apple listings by market. The first version searched
+global IDs everywhere, which missed regional releases. The corrected mapping is:
+
+| Game | Default listing | CN | VN | Other overrides |
+| --- | --- | --- | --- | --- |
+| Genshin Impact | 1517783697 | 1467190251 | 6451477469 | — |
+| Honkai: Star Rail | 1599719154 | 1523037824 | 6451473600 | — |
+| Zenless Zone Zero | 1606356401 | 1606359076 | 6476137851 | — |
+| Honkai Impact 3rd | 1336342304 | 1143402987 | 6448864292 | SG/MY/TH/ID/PH: 1299582178; JP: 1172809651; KR: 1286705196 |
+| Tears of Themis | 1517957388 | 1507310279 | unresolved | — |
+
+Each override has an Apple listing reference in `market_mapping_sources`.
+Examples: [CN Star Rail](https://apps.apple.com/cn/app/id1523037824),
+[CN Genshin](https://apps.apple.com/cn/app/id1467190251),
+[VN Star Rail](https://apps.apple.com/vn/app/honkai-star-rail-3t-online/id6451473600),
+[VN Genshin](https://apps.apple.com/vn/app/genshin-impact-funtap/id6451477469),
+and [VN ZZZ](https://apps.apple.com/vn/app/zenless-zone-zero-gamota/id6476137851).
+
+`market_app_ids` overrides the default ID for that country. An explicit JSON
+`null` means unresolved: **do not fall back to the global ID**. This is used
+for VN Tears of Themis, whose regional listing remains unverified. An unresolved
+mapping is not proof of unavailability.
+Missing override keys retain the configured default. Custom legacy rosters with
+only `app_id` and `title` remain supported.
+
+`game_id` is the stable identity for cross-market analysis; `app_id` is the
+actual market listing searched, blank when unresolved. `canonical_app_id`
+retains the original default ID to help join earlier exports. Do not group
+regional listings solely by `app_id`. Duplicate market IDs within a genre and
+inconsistent mappings for the same game across genres are rejected.
+
+Tears of Themis is retained only in Role-Playing, using the already requested
+chart. The user confirmed that their pasted CN entry came from the
+`limit=100/genre=7014` feed. That establishes membership in that requested
+Top 100 snapshot; the isolated entry does not establish its exact rank.
+Its App ID is **1507310279**, while the global listing is **1517957388**.
+The entry's `category.im:id=6014` denotes Games and does not override the
+requested Role-Playing genre. Category labels or page badges are not used
+as substitutes for feed membership or rank.
+
+The v3 roster temporarily excluded Honkai Impact 3rd and Tears of Themis.
+Fresh collections use v4, restoring their regional mappings and adding Action.
+Old artifacts and existing sheet history are unchanged. The Sheets validator
+rejects CSVs whose roster version or target set differs from the active config.
+
+**Earlier exports:** CN/VN rows and Honkai regional rows from roster v1 do not
+establish that the games were outside the charts. Exclude those affected rows
+from rank-history conclusions and make a fresh manual collection after the fix.
+Old artifacts are left untouched. Reported ranks are offline regression
+fixtures only; they are never inserted as live observations or backfilled.
 
 Apple's legacy RSS endpoint has no App-ID filter. The tracker fetches each
 market/genre Top Grossing chart once at limit=100, then matches exact App IDs
-locally, preserving the original feed positions. There are **20 chart requests**
-and **70 game records** with the default config. No per-game lookup requests,
+locally across every returned entry, preserving the original feed positions,
+including ranks 99 and 100. There are **30 chart requests** and **90 game records**
+with the default config (2 Adventure + 5 Role-Playing + 2 Action targets per market).
+No per-game lookup requests,
 retries, reduced-depth fallback, or title-based matching are used. Legacy
 endpoints can fail or return fewer entries; depth 100 is requested, not promised.
 
@@ -47,13 +89,20 @@ in their names:
 
 Shared columns: `run_id, snapshot_id, retrieved_at_utc, country, store,
 feed_type, genre, genre_id, requested_depth, coverage_depth, chart_status,
-http_status, error, source, source_url, feed_updated_at, feed_fields, entry_fields`.
+http_status, error, source, source_url, feed_updated_at, feed_fields, entry_fields,
+roster_version`.
 
-Game columns: `app_id, title, observed_title, rank, status, store_url`.
+Game columns: `app_id, title, observed_title, rank, status, store_url, game_id,
+canonical_app_id, mapping_status, mapping_source_url, mapping_note, status_reason`.
 `title` is configured; `observed_title` and `store_url` come from the feed.
 Unobserved ranks are blank CSV cells (null), never 101.
 
-Chart-only columns: `source_count, chart_complete`. Join files on `snapshot_id`;
+Chart-only columns: `source_count, chart_complete, unresolved_game_ids`.
+`mapping_status` is `default`, `market-override` or `unresolved`. The mapping
+reference and note explain the selected listing independently of feed metadata.
+Chart completeness does not imply listing coverage: an unresolved listing is
+`unknown` with reason `unresolved_market_listing`, even on a complete chart.
+Retrieval/validation errors remain `error` regardless of mapping state. Join files on `snapshot_id`;
 `run_id` groups all charts. Each chart gets a unique snapshot ID.
 GitHub run IDs include attempt; standalone invocations use a new UUID.
 `retrieved_at_utc` records request/attempt completion time in UTC;
@@ -61,14 +110,14 @@ GitHub run IDs include attempt; standalone invocations use a new UUID.
 
 | Chart status | Meaning | Absent game status |
 | --- | --- | --- |
-| complete | HTTP success and exactly the requested number of valid, unique entries | outside-chart |
+| complete | HTTP success and exactly the requested number of valid, unique entries | outside-chart if listing resolved; otherwise unknown |
 | partial | Valid nonempty response shorter than requested | unknown |
 | empty | Valid feed with zero entries or no entry field | unknown |
 | error | HTTP, transport, JSON or entry validation failure | error |
 
 An observed game is `ranked`, including on a partial chart; its
 `chart_status` still preserves partial coverage. `outside-chart` only means
-absent from this complete requested chart, not an exact lower rank or proof of
+the resolved market listing is absent from this complete requested chart, not an exact lower rank or proof of
 market availability. Duplicate, malformed, nonnumeric-ID and oversized charts
 are errors, not evidence of absence. Rejected responses have zero validated
 coverage and an error detail. Original parser validation is reused.
@@ -80,8 +129,8 @@ the job. Artifacts are per-run downloads, not an automatically appended history.
 ## Verification and scope
 
 The existing collector CI runs the offline suite, including targeted matching,
-localized titles, partial/missing/error feeds, request counts, CSV round trips,
-roster validation and artifact-only behavior:
+localized titles, CN Themis at ranks 99 and 100, partial/missing/error feeds,
+request counts, CSV round trips, roster validation and artifact-only behavior:
 
 ```sh
 cd collector

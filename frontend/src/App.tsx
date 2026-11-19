@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import SteamDevCollection from "./SteamDevCollection";
+import TableauCalculations from "./TableauCalculations";
 
 type Ranking = {
   position: number; position_semantics: string; app_id: string; title: string;
@@ -8,11 +9,11 @@ type Ranking = {
 };
 type ChartStatus = {
   feed_type: string; genre: string; status: string; returned_count: number;
-  source_count: number; category_filter_id: number | string;
+  source_count: number; requested_depth: number; category_filter_id: number | string;
   http_status: number | null; error: string; feed_fields: string;
   entry_fields: string; source_url: string;
 };
-type Collection = { feed_type: string; genre: string; rankings: Ranking[]; statuses: ChartStatus[]; request_count: number; tracked_app_ids_selected?: string[] | null };
+type Collection = { feed_type: string; genre: string; country: string; rankings: Ranking[]; statuses: ChartStatus[]; request_count: number };
 
 function downloadCsv(name: string, rows: Ranking[]) {
   const fields = ["position", "position_semantics", "app_id", "title", "developer", "release_date", "store_url", "artwork_url", "price_amount", "price_currency", "category_id", "category_label"];
@@ -31,11 +32,7 @@ function TableauDashboard() {
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    // Preserve the published 1000px canvas while filling the available page width.
-    const fitDashboard = () => {
-      const width = viewport.getBoundingClientRect().width;
-      if (width > 0) setFrameScale(width / 1000);
-    };
+    const fitDashboard = () => setFrameScale(Math.min(1, viewport.getBoundingClientRect().width / 1000));
     fitDashboard();
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(fitDashboard);
@@ -70,8 +67,6 @@ function AppleDevCollection() {
   const [token, setToken] = useState("");
   const [feedType, setFeedType] = useState("top-grossing");
   const [genre, setGenre] = useState("games");
-  const [trackedAppIds, setTrackedAppIds] = useState<string[]>(["1517783697", "1599719154", "1606356401"]);
-  const [customAppId, setCustomAppId] = useState("");
   const [market, setMarket] = useState("SG");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Collection | null>(null);
@@ -81,7 +76,7 @@ function AppleDevCollection() {
     try {
       const response = await fetch("/api/dev/apple-collect", {
         method: "POST", headers: { "X-Dev-Token": token, "Content-Type": "application/json" },
-        body: JSON.stringify({ feed_type: feedType, genre, market, tracked_app_ids: trackedAppIds }),
+        body: JSON.stringify({ feed_type: feedType, genre, market }),
       });
       const responseText = await response.text();
       let body: Record<string, unknown>;
@@ -97,11 +92,11 @@ function AppleDevCollection() {
   return (
     <section className="panel dev-panel" aria-label="Developer Apple RSS diagnostics">
       <div className="panel-heading">
-        <div><h2>Developer · Apple legacy RSS diagnostics</h2><p>10 Apple storefronts · Top Grossing 50 / New Applications 20 requested</p></div>
+        <div><h2>Developer · Apple legacy RSS diagnostics</h2><p>10 Apple storefronts · Top Grossing 100 / New Applications 20 requested</p></div>
         <span className="panel-status">One request per run</span>
       </div>
       <div className="dev-body">
-        <p className="dev-note">Single-request isolation: select a feed and category, then inspect its response. This avoids batching ten large legacy feeds into one serverless invocation.</p>
+        <p className="dev-note">Select one market, feed and category. Top Grossing shows all fetched entries from the requested Top 100; partial charts show their actual coverage.</p>
         <label htmlFor="dev-token">Dev collection token (configured in Vercel)</label>
         <input id="dev-token" type="password" value={token} onChange={event => setToken(event.target.value)} autoComplete="off" placeholder="Enter token" />
         <div className="dev-select-row">
@@ -113,45 +108,16 @@ function AppleDevCollection() {
             <option value="PH">Philippines</option><option value="VN">Vietnam</option>
           </select></label>
           <label>Feed type<select value={feedType} onChange={event => setFeedType(event.target.value)}><option value="top-grossing">Top Grossing (topgrossingapplications)</option><option value="new-applications">New Applications (newapplications)</option></select></label>
-          <label>Category<select value={genre} onChange={event => setGenre(event.target.value)}><option value="games">Games</option><option value="adventure">Adventure</option><option value="role-playing">Role-Playing</option><option value="simulation">Simulation</option><option value="strategy">Strategy</option><option value="casual">Casual</option></select></label>
+          <label>Category<select value={genre} onChange={event => setGenre(event.target.value)}><option value="games">Games</option><option value="adventure">Adventure</option><option value="role-playing">Role-Playing</option><option value="simulation">Simulation</option><option value="action">Action</option><option value="strategy">Strategy</option><option value="casual">Casual</option></select></label>
         </div>
-        <fieldset className="tracked-games-control">
-          <legend>Tracked games for snapshot calculation</legend>
-          <p className="dev-note">Select which App Store IDs count as tracked titles. This selection applies to this diagnostic request only.</p>
-          {[
-            { id: "1517783697", name: "Genshin Impact" },
-            { id: "1599719154", name: "Honkai: Star Rail" },
-            { id: "1606356401", name: "Zenless Zone Zero" },
-          ].map(game => <label key={game.id} className="tracked-game-option">
-            <input type="checkbox" checked={trackedAppIds.includes(game.id)}
-              onChange={event => setTrackedAppIds(current => event.target.checked
-                ? [...current, game.id] : current.filter(id => id !== game.id))} />
-            <span>{game.name} <small>ID {game.id}</small></span>
-          </label>)}
-          <label className="tracked-custom-label">Add another Apple App ID
-            <div className="tracked-custom-row">
-              <input inputMode="numeric" pattern="[0-9]*" value={customAppId}
-                onChange={event => setCustomAppId(event.target.value.replace(/\\D/g, "").slice(0, 20))}
-                placeholder="Numeric App Store ID" />
-              <button type="button" disabled={!customAppId || trackedAppIds.includes(customAppId)}
-                onClick={() => { setTrackedAppIds(current => [...current, customAppId]); setCustomAppId(""); }}>Add</button>
-            </div>
-          </label>
-          {trackedAppIds.filter(id => !["1517783697","1599719154","1606356401"].includes(id)).map(id =>
-            <label key={id} className="tracked-game-option">
-              <input type="checkbox" checked onChange={() => setTrackedAppIds(current => current.filter(value => value !== id))} />
-              <span>Custom App ID <small>{id}</small></span>
-            </label>)}
-          <p className="dev-note">{trackedAppIds.length} tracked ID(s) selected. {trackedAppIds.length === 0 ? "No tracked titles selected: Top 10 fallback will be used for a complete Top 50 chart." : "The lowest-ranked selected title determines snapshot depth."}</p>
-        </fieldset>
         <button className="dev-run" type="button" disabled={!token || loading} onClick={run}>{loading ? "Testing feed…" : "Run Selected Feed Test"}</button>
         {error && <p className="dev-error" role="alert">{error}</p>}
         {result && <div className="dev-results">
           <div className="apple-result-overview">
             <div>
-              <span className="apple-eyebrow">{market} APP STORE</span>
+              <span className="apple-eyebrow">{result.country} APP STORE</span>
               <h3>{result.feed_type === "topgrossingapplications" ? "Top Grossing Games" : "New Applications"}</h3>
-              <p>{result.genre.replace("-", " ")} · {result.feed_type === "newapplications" ? "20 requested; feed may return more" : "Top 50 fetched; snapshot retained"} · {result.rankings.length} entries returned</p>
+              <p>{result.genre.replace("-", " ")} · {result.feed_type === "newapplications" ? "20 requested; feed may return more" : "Top 100 requested; all fetched entries shown"} · {result.rankings.length} entries returned</p>
             </div>
             <div className="apple-result-count"><strong>{result.rankings.length}</strong><span>apps returned</span></div>
           </div>
@@ -161,11 +127,11 @@ function AppleDevCollection() {
             <span>HTTP {status.http_status ?? "—"} · {status.returned_count} shown</span>
             {status.source_count > status.returned_count && <span>{status.source_count} source entries</span>}
             {status.category_filter_id && <span>Filtered to Games (6014)</span>}
-            {status.status === "fallback_top_10" && <span>No tracked titles in Top 50 · showing Top 10 fallback</span>}
+            {result.feed_type === "topgrossingapplications" && <span>{status.source_count}/{status.requested_depth} fetched</span>}
             {status.error && <span className="dev-error">{status.error}</span>}
           </div>)}
           <div className="dev-actions">
-            <button type="button" disabled={!result.rankings.length} onClick={() => downloadCsv(`apple_${market.toLowerCase()}_${result.feed_type}_${result.genre}.csv`, result.rankings)}>Download CSV</button>
+            <button type="button" disabled={!result.rankings.length} onClick={() => downloadCsv(`apple_${result.country.toLowerCase()}_${result.feed_type}_${result.genre}.csv`, result.rankings)}>Download CSV</button>
           </div>
           <div className="apple-results-table-wrap">
             <table className="apple-results-table">
@@ -295,7 +261,10 @@ export default function App() {
         {activeSection === "Steam" && <SteamDevCollection />}
 
         {activeSection === "Overview" ? (
-          <TableauDashboard />
+          <div className="overview-layout">
+            <TableauDashboard />
+            <TableauCalculations />
+          </div>
         ) : (
           <div className="panel-grid">
             {panels[activeSection].map((panel) => (

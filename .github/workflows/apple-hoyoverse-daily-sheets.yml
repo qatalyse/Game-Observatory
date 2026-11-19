@@ -1,0 +1,118 @@
+name: Daily HoYoverse Apple retrieval and Sheets
+
+on:
+  schedule:
+    # Placeholder: 09:17 Asia/Singapore (UTC+8). Change this line to change time.
+    - cron: "17 1 * * *"
+  workflow_dispatch:
+    inputs:
+      publish_to_sheets:
+        description: "Upload to the configured spreadsheet (requires validated regional data)"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apple-hoyoverse-daily-sheets
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    # Missing/false variable means no automatic retrieval or upload.
+    if: github.event_name == 'workflow_dispatch' || vars.APPLE_SHEETS_DAILY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      validated: ${{ steps.validate.outcome == 'success' }}
+    defaults:
+      run:
+        working-directory: collector
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test offline fixtures
+        run: python -m unittest discover -s tests -v
+      - name: Collect regional App-ID targets
+        id: collect
+        continue-on-error: true
+        run: python -m game_observatory.apple_hoyoverse --output data/apple-hoyoverse
+      - name: Validate complete batch without Google access
+        id: validate
+        if: steps.collect.outcome == 'success'
+        run: python -m game_observatory.apple_sheets --input data/apple-hoyoverse
+      - name: Retain both CSVs even when collection fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-hoyoverse-daily-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            collector/data/apple-hoyoverse/apple_hoyoverse_rankings.csv
+            collector/data/apple-hoyoverse/apple_hoyoverse_chart_statuses.csv
+          if-no-files-found: error
+          retention-days: 30
+      - name: Fail after retaining source errors
+        if: steps.collect.outcome == 'failure'
+        run: |
+          echo "Collection failed. CSV artifacts are retained; Sheets upload is skipped."
+          exit 1
+
+  publish:
+    needs: collect
+    if: >-
+      needs.collect.result == 'success' && needs.collect.outputs.validated == 'true' &&
+      (github.event_name == 'schedule' || inputs.publish_to_sheets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: collector
+    env:
+      APPLE_REGIONAL_VALIDATED: ${{ vars.APPLE_REGIONAL_VALIDATED }}
+      GOOGLE_SHEETS_SPREADSHEET_ID: ${{ vars.GOOGLE_SHEETS_SPREADSHEET_ID }}
+      GOOGLE_SHEETS_RANKINGS_TAB: ${{ vars.GOOGLE_SHEETS_RANKINGS_TAB || 'HoYoRankHistory' }}
+      GOOGLE_SHEETS_STATUSES_TAB: ${{ vars.GOOGLE_SHEETS_STATUSES_TAB || 'HoYoChartStatuses' }}
+      GOOGLE_WIF_PROVIDER: ${{ vars.GOOGLE_WIF_PROVIDER }}
+      GOOGLE_SERVICE_ACCOUNT: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check explicit publishing setup
+        run: |
+          python - <<'PY'
+          import os
+          required = ("GOOGLE_SHEETS_SPREADSHEET_ID", "GOOGLE_WIF_PROVIDER", "GOOGLE_SERVICE_ACCOUNT")
+          if os.environ.get("APPLE_REGIONAL_VALIDATED") != "true":
+              raise SystemExit("Validate PR #3 live data, then set APPLE_REGIONAL_VALIDATED=true.")
+          missing = [name for name in required if not os.environ.get(name)]
+          if missing:
+              raise SystemExit("Configure repository variables: " + ", ".join(missing))
+          PY
+      - name: Install upload-only authentication dependency
+        run: python -m pip install -r requirements-sheets.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: apple-hoyoverse-daily-${{ github.run_id }}-${{ github.run_attempt }}
+          path: collector/data/apple-hoyoverse
+      - name: Authenticate to Google through short-lived federation
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GOOGLE_WIF_PROVIDER }}
+          service_account: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+      - name: Publish daily snapshot with duplicate protection
+        run: python -m game_observatory.apple_sheets --input data/apple-hoyoverse --publish
