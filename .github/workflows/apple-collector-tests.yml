@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - "collector/**"
+      - "api/index.py"
       - ".github/workflows/apple-collector-tests.yml"
       - ".github/workflows/apple-test-dataset.yml"
       - ".github/workflows/apple-hoyoverse-targeted.yml"
@@ -10,6 +11,7 @@ on:
   pull_request:
     paths:
       - "collector/**"
+      - "api/index.py"
       - ".github/workflows/apple-collector-tests.yml"
       - ".github/workflows/apple-test-dataset.yml"
       - ".github/workflows/apple-hoyoverse-targeted.yml"
