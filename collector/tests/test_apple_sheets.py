@@ -24,8 +24,8 @@ def strings(rows, fields):
     return list(csv.DictReader(io.StringIO(output.getvalue())))
 
 
-def fixture(day=19, error=False):
-    config = tracker.load_config()
+def fixture(day=19, error=False, config=None):
+    config = tracker.load_config() if config is None else config
     specs = {str(g["genre_id"]): g for g in config["genres"]}
     def fetch(url):
         if error and "/us/" in url:
@@ -106,12 +106,12 @@ class FakeSheets:
 
 
 class ValidationTests(unittest.TestCase):
-    def test_70_rows_20_charts_and_singapore_day_preserve_regional_identity(self):
+    def test_50_rows_20_charts_and_singapore_day_preserve_regional_identity(self):
         rows, charts = fixture()
         batch = sheets.prepare(rows, charts)
-        self.assertEqual((len(batch["rankings"]), len(batch["charts"])), (70, 20))
+        self.assertEqual((len(batch["rankings"]), len(batch["charts"])), (50, 20))
         self.assertEqual(batch["collection_date"], "2026-11-19")
-        self.assertEqual(len({r["record_key"] for r in batch["rankings"]}), 70)
+        self.assertEqual(len({r["record_key"] for r in batch["rankings"]}), 50)
         cn = next(r for r in batch["rankings"] if r["country"] == "CN" and r["game_id"] == "honkai-star-rail" and r["genre_id"] == "7002")
         self.assertEqual(cn["app_id"], "1523037824")
         self.assertEqual(cn["canonical_app_id"], "1599719154")
@@ -147,15 +147,19 @@ class ValidationTests(unittest.TestCase):
                     sheets.prepare(rows, charts)
 
     def test_unresolved_and_partial_are_valid_but_errors_block_publication(self):
-        rows, charts = fixture()
-        vn = next(r for r in rows if r["country"] == "VN" and r["game_id"] == "tears-of-themis")
+        config = tracker.load_config()
+        game = config["genres"][1]["games"][2]
+        game["market_app_ids"]["VN"] = None
+        game["market_mapping_sources"].pop("VN")
+        rows, charts = fixture(config=config)
+        vn = next(r for r in rows if r["country"] == "VN" and r["game_id"] == "zenless-zone-zero")
         self.assertEqual((vn["rank"], vn["status"]), ("", "unknown"))
         # All retained observations are within first five entries in this fixture.
         for r in rows + charts:
             r["chart_status"], r["coverage_depth"] = "partial", "5"
         for c in charts:
             c["source_count"], c["chart_complete"] = "5", "False"
-        self.assertEqual(sheets.prepare(rows, charts)["chart_errors"], 0)
+        self.assertEqual(sheets.prepare(rows, charts, config=config)["chart_errors"], 0)
         bad_rows, bad_charts = fixture(error=True)
         batch = sheets.prepare(bad_rows, bad_charts)
         self.assertEqual(batch["chart_errors"], 2)
@@ -183,7 +187,7 @@ class PublishingTests(unittest.TestCase):
         report = sheets.publish(client, batch)
         self.assertEqual(report["status"], "published")
         self.assertEqual(len(client.writes), 1)
-        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 71)
+        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 51)
         self.assertEqual(len(client.tables[sheets.DEFAULT_CHART_TAB]), 21)
         self.assertEqual(client.tables[sheets.DEFAULT_RANK_TAB][0], list(sheets.RANK_HEADERS))
         self.assertEqual(len(client.state["developerMetadata"]), 1)
@@ -204,8 +208,8 @@ class PublishingTests(unittest.TestCase):
         sheets.publish(client, self.batch(19))
         before = deepcopy(client.tables)
         sheets.publish(client, self.batch(20))
-        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 141)
-        self.assertEqual(client.tables[sheets.DEFAULT_RANK_TAB][:71], before[sheets.DEFAULT_RANK_TAB])
+        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 101)
+        self.assertEqual(client.tables[sheets.DEFAULT_RANK_TAB][:51], before[sheets.DEFAULT_RANK_TAB])
         self.assertEqual(len(client.state["developerMetadata"]), 2)
 
     def test_timeout_after_commit_and_concurrent_writer_do_not_duplicate(self):
@@ -216,14 +220,14 @@ class PublishingTests(unittest.TestCase):
                 report = sheets.publish(client, self.batch(), sleep=lambda _: None)
                 self.assertEqual(report["status"], "already_published")
                 self.assertEqual(len(client.writes), 1)
-                self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 71)
+                self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 51)
 
     def test_transient_errors_retry_with_backoff_then_succeed(self):
         client, pauses = FakeSheets(), []
         client.failures = [sheets.SheetsError(429), sheets.SheetsError(503)]
         self.assertEqual(sheets.publish(client, self.batch(), sleep=pauses.append)["status"], "published")
         self.assertEqual(pauses, [2, 4])
-        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 71)
+        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 51)
 
     def test_read_failures_and_exhaustion_do_not_blindly_append(self):
         client, pauses = FakeSheets(), []
@@ -266,7 +270,10 @@ class PublishingTests(unittest.TestCase):
 
     def test_strings_are_literal_ids_text_numbers_numeric_and_null_ranks_blank(self):
         client = FakeSheets()
-        sheets.publish(client, self.batch())
+        batch = self.batch()
+        absent = next(r for r in batch["rankings"] if r["country"] == "VN" and r["game_id"] == "zenless-zone-zero")
+        absent.update(rank="", status="outside-chart", observed_title="", store_url="")
+        sheets.publish(client, batch)
         requests = client.writes[0]
         append = next(r["appendCells"] for r in requests if "appendCells" in r)
         values = append["rows"][0]["values"]
@@ -276,7 +283,7 @@ class PublishingTests(unittest.TestCase):
         all_cells = [v for r in append["rows"] for v in r["values"]]
         self.assertTrue(any(v.get("userEnteredValue", {}).get("stringValue", "").startswith("=SUM") for v in all_cells))
         self.assertFalse(any("formulaValue" in v.get("userEnteredValue", {}) for v in all_cells))
-        vn = next(r for r in append["rows"] if r["values"][sheets.RANK_HEADERS.index("game_id")].get("userEnteredValue", {}).get("stringValue") == "tears-of-themis" and r["values"][sheets.RANK_HEADERS.index("country")]["userEnteredValue"]["stringValue"] == "VN")
+        vn = next(r for r in append["rows"] if r["values"][sheets.RANK_HEADERS.index("game_id")].get("userEnteredValue", {}).get("stringValue") == "zenless-zone-zero" and r["values"][sheets.RANK_HEADERS.index("country")]["userEnteredValue"]["stringValue"] == "VN")
         self.assertEqual(vn["values"][sheets.RANK_HEADERS.index("rank")], {})
 
     def test_sheet_names_are_distinct_and_support_quotes(self):

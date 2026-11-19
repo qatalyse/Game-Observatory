@@ -16,14 +16,16 @@ No Tableau refresh or publication is performed.
 
 ## Dependencies and validation order
 
-This PR is stacked on PR #3 so its review diff contains only daily/Sheets work.
-Merge/validate the regional fix first, then retarget this PR to `main` if needed.
-The publisher rejects the old CSV schema and mismatched regional IDs.
+The regional listing fix from PR #3 has been merged. This change targets
+`main` and uses the focused v3 roster: Adventure contains Genshin and Star Rail;
+Role-Playing contains those two plus ZZZ. The publisher derives its expected
+target set from that config and rejects old/different rosters, CSV schemas and
+mismatched regional IDs.
 
-1. Run PR #3's existing manual collector on its branch and inspect fresh CN/VN
-   results against the source. Unresolved VN Tears of Themis remains unknown;
-   not every title must be ranked for validation to pass.
-2. Merge the regional fix and this separate daily/Sheets change.
+1. Use the existing manual collector on this PR's branch to validate a fresh
+   focused-roster collection: 50 game rows, 20 chart rows, and the correct
+   CN/VN regional IDs. Not every title must be ranked for validation to pass.
+2. Merge this daily/Sheets change after that review.
 3. Configure a **test spreadsheet** and Google identity below.
 4. Manually run **Daily HoYoverse Apple retrieval and Sheets**, leaving
    **publish_to_sheets unchecked**. This collects/validates CSVs with no Google
@@ -81,14 +83,14 @@ Artifacts contain only the two explicitly named CSVs, never credential files.
 
 ## Storage and rerun rules
 
-Each default collection still makes **20 chart requests** and yields **70 game
+Each focused default collection makes **20 chart requests** and yields **50 game
 records** plus **20 chart records**. CSV artifacts are retained for 30 days even
 if collection fails; they are uploaded before the separate publishing job.
 
 - `HoYoRankHistory`: one row per game/market/genre for the accepted daily snapshot.
 - `HoYoChartStatuses`: one row per chart in that snapshot.
 
-Both tabs prepend `collection_date, publication_key, record_key` to the PR #3
+Both tabs prepend `collection_date, publication_key, record_key` to the collector's
 CSV columns. `collection_date` is the **Asia/Singapore date of actual UTC retrieval
 timestamps**, not an invented scheduled timestamp. A batch crossing Singapore
 midnight is rejected. Missed days are not backfilled with later observations.
@@ -97,7 +99,9 @@ Ranks and coverage counts are numeric; App IDs, game IDs and UTC timestamps
 remain text. Null ranks are blank cells, never zero or 101. Text is written as
 literal strings so titles beginning with `=` cannot become formulas.
 Use `game_id` for cross-market grouping and `app_id` for the actual regional
-listing. Unknown/outside-chart semantics remain those of PR #3.
+listing. Unknown/outside-chart semantics remain those of the regional collector.
+Honkai Impact 3rd and Tears of Themis are excluded from the focused default;
+previous CSV artifacts or sheet history containing them are not deleted.
 
 **First successful upload per Singapore date wins.** Additional collections or
 reruns on that date do not append duplicates or replace the accepted snapshot,
