@@ -13,7 +13,7 @@ retrieval times; no files or database records are written. See the complete
 
 Open **Actions → Export Steam player test dataset → Run workflow**.
 This separate manual workflow uses the existing Steam collector for every
-configured game (currently twelve) and uploads two artifacts for 30 days:
+configured game (currently 17) and uploads two artifacts for 30 days:
 `steam-current-players` (`steam_players.csv`, successful observations only)
 and `steam-player-statuses` (`steam_statuses.csv`, every game and any errors).
 Valid zeroes remain zero; failed/unavailable counts are blank. Both files

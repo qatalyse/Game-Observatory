@@ -1,6 +1,6 @@
 # Manual Steam concurrent-player diagnostics
 
-This diagnostic checks the twelve configured Steam apps on demand. It uses the
+This diagnostic checks the 17 configured Steam apps on demand. It uses the
 official [ISteamUserStats/GetNumberOfCurrentPlayers/v1](https://partner.steamgames.com/doc/webapi/ISteamUserStats#GetNumberOfCurrentPlayers)
 method via the public Steam Web API host:
 
@@ -29,7 +29,17 @@ or a measurement timestamp; UTC timestamps record our retrieval attempts.
 | Stardew Valley | 413150 |
 | The Sims 4 | 1222670 |
 | The Sims 3 | 47890 |
-| The Sims 2 Legacy Collection | 3314070 |
+| [Heartopia](https://store.steampowered.com/app/4025700/) | 4025700 |
+| [Arknights: Endfield](https://store.steampowered.com/app/4732690/) | 4732690 |
+| [Persona5: The Phantom X](https://store.steampowered.com/app/3061570/) | 3061570 |
+| [Where Winds Meet](https://store.steampowered.com/app/3564740/) | 3564740 |
+| [Reverse: 1999](https://store.steampowered.com/app/3092660/) | 3092660 |
+| [AFK Journey](https://store.steampowered.com/app/4195600/) | 4195600 |
+
+The six additions above were verified against their official Steam store pages
+on 2026-11-19. P5X is listed as Persona5: The Phantom X. The Sims 2 Legacy
+Collection (3314070) is no longer requested; previously exported artifacts
+remain unchanged.
 
 These user-selected mappings are configured in `collector/game_observatory/steam.py`
 and mirrored in `frontend/src/SteamDevCollection.tsx`; a test checks the mapping.
@@ -40,7 +50,7 @@ or has no players. We do not infer release state from this endpoint.
 
 1. Set the server-side `DEV_COLLECT_TOKEN` environment variable in Vercel and
    redeploy. Use a strong secret; never give it a `VITE_` prefix.
-2. Open **Steam**, enter the token, and select any of the twelve games.
+2. Open **Steam**, enter the token, and select any of the 17 games.
 3. Click **Check selected games**. At least one game and a token are required.
 4. Inspect each game's count, status, HTTP/Steam result codes and UTC time.
 
@@ -65,7 +75,7 @@ curl -X POST 'https://YOUR-DEPLOYMENT/api/dev/steam-collect' \
 ```
 
 `app_ids` is required: a non-empty JSON array of unique **string** IDs from the
-catalogue, maximum twelve. Unknown IDs, duplicates, numeric values, null, malformed
+catalogue, maximum 17. Unknown IDs, duplicates, numeric values, null, malformed
 JSON, negative/invalid content lengths, transfer encoding and extra object keys
 are rejected before collection. The body limit is 2,048 bytes.
 
@@ -115,7 +125,7 @@ Open **Actions → Export Steam player test dataset → Run workflow**, select
 `main`, then select **Run workflow**. The export executes on GitHub's hosted
 runner; it does not need a local checkout, Steam API key, Vercel token or database
 credentials. It requests the current player count once for every configured game
-(currently twelve) using the existing Steam collector.
+(currently 17) using the existing Steam collector.
 
 Download the two artifacts from the completed run page (retained for 30 days):
 
@@ -161,7 +171,7 @@ no database, Steam key or third-party Python packages required:
 
 ```bash
 cd collector
-python -m game_observatory.steam                        # all twelve apps
+python -m game_observatory.steam                        # all 17 apps
 python -m game_observatory.steam --app-ids 3513350,413150 # selected apps
 python -m unittest discover -s tests -v
 ```
