@@ -11,9 +11,11 @@ The dedicated [roster config](../collector/game_observatory/apple_hoyoverse.json
 controls genres, stable game IDs, default listing IDs, market overrides and depth.
 Markets remain SG, US, JP, KR, CN, MY, TH, ID, PH and VN. Genres are checked
 against existing `apple.GENRES`: Adventure (7002) targets Genshin and Star Rail;
-Role-Playing (7014) targets those two plus Zenless Zone Zero.
+Role-Playing (7014) targets those two plus Zenless Zone Zero, Honkai Impact 3rd
+and Tears of Themis; Action (7001) targets ZZZ and Honkai Impact 3rd.
+No Card or Simulation chart requests are added.
 
-## Regional listings (roster version focused-three-titles-v3)
+## Regional listings (roster version three-genres-five-titles-v4)
 
 A game can have different Apple listings by market. The first version searched
 global IDs everywhere, which missed regional releases. The corrected mapping is:
@@ -23,6 +25,8 @@ global IDs everywhere, which missed regional releases. The corrected mapping is:
 | Genshin Impact | 1517783697 | 1467190251 | 6451477469 | — |
 | Honkai: Star Rail | 1599719154 | 1523037824 | 6451473600 | — |
 | Zenless Zone Zero | 1606356401 | 1606359076 | 6476137851 | — |
+| Honkai Impact 3rd | 1336342304 | 1143402987 | 6448864292 | SG/MY/TH/ID/PH: 1299582178; JP: 1172809651; KR: 1286705196 |
+| Tears of Themis | 1517957388 | 1507310279 | unresolved | — |
 
 Each override has an Apple listing reference in `market_mapping_sources`.
 Examples: [CN Star Rail](https://apps.apple.com/cn/app/id1523037824),
@@ -32,9 +36,9 @@ Examples: [CN Star Rail](https://apps.apple.com/cn/app/id1523037824),
 and [VN ZZZ](https://apps.apple.com/vn/app/zenless-zone-zero-gamota/id6476137851).
 
 `market_app_ids` overrides the default ID for that country. An explicit JSON
-`null` means unresolved: **do not fall back to the global ID**. This remains
-supported for custom rosters even though all current default targets have
-configured listing IDs. An unresolved mapping is not proof of unavailability.
+`null` means unresolved: **do not fall back to the global ID**. This is used
+for VN Tears of Themis, whose regional listing remains unverified. An unresolved
+mapping is not proof of unavailability.
 Missing override keys retain the configured default. Custom legacy rosters with
 only `app_id` and `title` remain supported.
 
@@ -44,21 +48,19 @@ retains the original default ID to help join earlier exports. Do not group
 regional listings solely by `app_id`. Duplicate market IDs within a genre and
 inconsistent mappings for the same game across genres are rejected.
 
-The focused default roster excludes Honkai Impact 3rd and Tears of Themis at
-the user's request. Apple category labels differ across markets: Honkai shows
-[Action in the US](https://apps.apple.com/us/app/honkai-impact-3rd/id1336342304)
-and [Role-Playing in Japan](https://apps.apple.com/jp/app/崩壊3rd/id1172809651);
-Tears of Themis shows
-[Role-Playing in the US](https://apps.apple.com/us/app/tears-of-themis/id1517957388)
-and [Card in China](https://apps.apple.com/cn/app/未定事件簿/id1507310279).
-Category labels and page badges are not substituted for Top Grossing feed
-membership or rank. The two removed titles can be revisited in a custom roster.
+Tears of Themis is retained only in Role-Playing, using the already requested
+chart. The user confirmed that their pasted CN entry came from the
+`limit=100/genre=7014` feed. That establishes membership in that requested
+Top 100 snapshot; the isolated entry does not establish its exact rank.
+Its App ID is **1507310279**, while the global listing is **1517957388**.
+The entry's `category.im:id=6014` denotes Games and does not override the
+requested Role-Playing genre. Category labels or page badges are not used
+as substitutes for feed membership or rank.
 
-The previous regional roster (v2) included those titles and used an explicit
-unresolved VN Tears of Themis mapping. That is historical context, not a current
-default target. Old artifacts and any existing sheet history are left unchanged.
-Fresh collections use the v3 roster version; the Sheets validator rejects CSVs
-whose roster version or target set differs from the active config.
+The v3 roster temporarily excluded Honkai Impact 3rd and Tears of Themis.
+Fresh collections use v4, restoring their regional mappings and adding Action.
+Old artifacts and existing sheet history are unchanged. The Sheets validator
+rejects CSVs whose roster version or target set differs from the active config.
 
 **Earlier exports:** CN/VN rows and Honkai regional rows from roster v1 do not
 establish that the games were outside the charts. Exclude those affected rows
@@ -68,8 +70,10 @@ fixtures only; they are never inserted as live observations or backfilled.
 
 Apple's legacy RSS endpoint has no App-ID filter. The tracker fetches each
 market/genre Top Grossing chart once at limit=100, then matches exact App IDs
-locally, preserving the original feed positions. There are **20 chart requests**
-and **50 game records** with the default config. No per-game lookup requests,
+locally across every returned entry, preserving the original feed positions,
+including ranks 99 and 100. There are **30 chart requests** and **90 game records**
+with the default config (2 Adventure + 5 Role-Playing + 2 Action targets per market).
+No per-game lookup requests,
 retries, reduced-depth fallback, or title-based matching are used. Legacy
 endpoints can fail or return fewer entries; depth 100 is requested, not promised.
 
@@ -125,8 +129,8 @@ the job. Artifacts are per-run downloads, not an automatically appended history.
 ## Verification and scope
 
 The existing collector CI runs the offline suite, including targeted matching,
-localized titles, partial/missing/error feeds, request counts, CSV round trips,
-roster validation and artifact-only behavior:
+localized titles, CN Themis at ranks 99 and 100, partial/missing/error feeds,
+request counts, CSV round trips, roster validation and artifact-only behavior:
 
 ```sh
 cd collector

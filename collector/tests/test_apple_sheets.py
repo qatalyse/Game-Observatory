@@ -106,12 +106,12 @@ class FakeSheets:
 
 
 class ValidationTests(unittest.TestCase):
-    def test_50_rows_20_charts_and_singapore_day_preserve_regional_identity(self):
+    def test_90_rows_30_charts_and_singapore_day_preserve_regional_identity(self):
         rows, charts = fixture()
         batch = sheets.prepare(rows, charts)
-        self.assertEqual((len(batch["rankings"]), len(batch["charts"])), (50, 20))
+        self.assertEqual((len(batch["rankings"]), len(batch["charts"])), (90, 30))
         self.assertEqual(batch["collection_date"], "2026-11-19")
-        self.assertEqual(len({r["record_key"] for r in batch["rankings"]}), 50)
+        self.assertEqual(len({r["record_key"] for r in batch["rankings"]}), 90)
         cn = next(r for r in batch["rankings"] if r["country"] == "CN" and r["game_id"] == "honkai-star-rail" and r["genre_id"] == "7002")
         self.assertEqual(cn["app_id"], "1523037824")
         self.assertEqual(cn["canonical_app_id"], "1599719154")
@@ -148,9 +148,11 @@ class ValidationTests(unittest.TestCase):
 
     def test_unresolved_and_partial_are_valid_but_errors_block_publication(self):
         config = tracker.load_config()
-        game = config["genres"][1]["games"][2]
-        game["market_app_ids"]["VN"] = None
-        game["market_mapping_sources"].pop("VN")
+        for spec in config["genres"]:
+            for game in spec["games"]:
+                if game["game_id"] == "zenless-zone-zero":
+                    game["market_app_ids"]["VN"] = None
+                    game["market_mapping_sources"].pop("VN")
         rows, charts = fixture(config=config)
         vn = next(r for r in rows if r["country"] == "VN" and r["game_id"] == "zenless-zone-zero")
         self.assertEqual((vn["rank"], vn["status"]), ("", "unknown"))
@@ -162,7 +164,7 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(sheets.prepare(rows, charts, config=config)["chart_errors"], 0)
         bad_rows, bad_charts = fixture(error=True)
         batch = sheets.prepare(bad_rows, bad_charts)
-        self.assertEqual(batch["chart_errors"], 2)
+        self.assertEqual(batch["chart_errors"], 3)
         client = FakeSheets()
         with self.assertRaisesRegex(ValueError, "Source chart errors"):
             sheets.publish(client, batch)
@@ -187,8 +189,8 @@ class PublishingTests(unittest.TestCase):
         report = sheets.publish(client, batch)
         self.assertEqual(report["status"], "published")
         self.assertEqual(len(client.writes), 1)
-        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 51)
-        self.assertEqual(len(client.tables[sheets.DEFAULT_CHART_TAB]), 21)
+        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 91)
+        self.assertEqual(len(client.tables[sheets.DEFAULT_CHART_TAB]), 31)
         self.assertEqual(client.tables[sheets.DEFAULT_RANK_TAB][0], list(sheets.RANK_HEADERS))
         self.assertEqual(len(client.state["developerMetadata"]), 1)
         self.assertTrue(any("createDeveloperMetadata" in r for r in client.writes[0]))
@@ -208,8 +210,8 @@ class PublishingTests(unittest.TestCase):
         sheets.publish(client, self.batch(19))
         before = deepcopy(client.tables)
         sheets.publish(client, self.batch(20))
-        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 101)
-        self.assertEqual(client.tables[sheets.DEFAULT_RANK_TAB][:51], before[sheets.DEFAULT_RANK_TAB])
+        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 181)
+        self.assertEqual(client.tables[sheets.DEFAULT_RANK_TAB][:91], before[sheets.DEFAULT_RANK_TAB])
         self.assertEqual(len(client.state["developerMetadata"]), 2)
 
     def test_timeout_after_commit_and_concurrent_writer_do_not_duplicate(self):
@@ -220,14 +222,14 @@ class PublishingTests(unittest.TestCase):
                 report = sheets.publish(client, self.batch(), sleep=lambda _: None)
                 self.assertEqual(report["status"], "already_published")
                 self.assertEqual(len(client.writes), 1)
-                self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 51)
+                self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 91)
 
     def test_transient_errors_retry_with_backoff_then_succeed(self):
         client, pauses = FakeSheets(), []
         client.failures = [sheets.SheetsError(429), sheets.SheetsError(503)]
         self.assertEqual(sheets.publish(client, self.batch(), sleep=pauses.append)["status"], "published")
         self.assertEqual(pauses, [2, 4])
-        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 51)
+        self.assertEqual(len(client.tables[sheets.DEFAULT_RANK_TAB]), 91)
 
     def test_read_failures_and_exhaustion_do_not_blindly_append(self):
         client, pauses = FakeSheets(), []
