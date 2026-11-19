@@ -54,12 +54,14 @@ function TableauDashboard() {
           className="tableau-frame"
           style={{ transform: `scale(${frameScale})` }}
           title="Game Observatory - Apple Top Grossing Adventure Rankings"
+          aria-describedby="tableau-disclaimer"
           src="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1?:showVizHome=no&:embed=yes&:toolbar=no&:tabs=no"
           loading="lazy"
           allowFullScreen
           scrolling="no"
         />
       </div>
+      <p className="tableau-disclaimer" id="tableau-disclaimer">Figures shown do not represent the full player base or overall market distribution, particularly for games available on multiple platforms.</p>
     </section>
   );
 }
