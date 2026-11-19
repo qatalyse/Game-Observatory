@@ -13,15 +13,17 @@ from uuid import uuid4
 from .apple import CHARTS, GENRES, MARKETS, SOURCE, feed_url, fetch_json, parse_entries, write_csv
 
 COMMON_FIELDS = (
-    "run_id", "snapshot_id", "retrieved_at_utc", "country", "store",
+    "run_id", "snapshot_id", "retrieved_at_utc", "country", "store", "roster_version",
     "feed_type", "genre", "genre_id", "requested_depth", "coverage_depth",
     "chart_status", "http_status", "error", "source", "source_url",
     "feed_updated_at", "feed_fields", "entry_fields",
 )
 FIELDS = COMMON_FIELDS + (
     "app_id", "title", "observed_title", "rank", "status", "store_url",
+    "game_id", "canonical_app_id", "mapping_status", "mapping_source_url",
+    "mapping_note", "status_reason",
 )
-STATUS_FIELDS = COMMON_FIELDS + ("source_count", "chart_complete")
+STATUS_FIELDS = COMMON_FIELDS + ("source_count", "chart_complete", "unresolved_game_ids")
 
 
 def load_config(path: Path | None = None) -> dict:
@@ -29,6 +31,20 @@ def load_config(path: Path | None = None) -> dict:
     config = json.loads(resource.read_text(encoding="utf-8"))
     validate_config(config)
     return config
+
+
+def market_listing(game: dict, country: str) -> tuple[str | None, str]:
+    """An explicit null suppresses the default ID; never guess a regional listing."""
+    overrides = game.get("market_app_ids", {})
+    if country in overrides:
+        app_id = overrides[country]
+        return app_id, "market-override" if app_id is not None else "unresolved"
+    return game["app_id"], "default"
+
+
+def _valid_app_id(value: object) -> bool:
+    return (isinstance(value, str) and value.isascii() and value.isdigit()
+            and int(value) > 0)
 
 
 def validate_config(config: dict) -> None:
@@ -40,6 +56,7 @@ def validate_config(config: dict) -> None:
     if not isinstance(genres, list) or not genres:
         raise ValueError("Config requires nonempty genres")
     seen_genres = set()
+    identities = {}
     for spec in genres:
         if not isinstance(spec, dict):
             raise ValueError("Invalid genre specification")
@@ -53,15 +70,42 @@ def validate_config(config: dict) -> None:
         if not isinstance(games, list) or not games:
             raise ValueError("Each genre requires games")
         seen_ids = set()
+        seen_games = set()
+        market_ids = {country: set() for country in MARKETS}
         for game in games:
             if not isinstance(game, dict):
                 raise ValueError("Invalid game specification")
             app_id, title = game.get("app_id"), game.get("title")
-            if not isinstance(app_id, str) or not app_id.isascii() or not app_id.isdigit() or int(app_id) <= 0:
+            if not _valid_app_id(app_id):
                 raise ValueError("App IDs must be positive numeric strings")
             if not isinstance(title, str) or not title.strip() or app_id in seen_ids:
                 raise ValueError("Game titles must be nonempty and IDs unique per genre")
             seen_ids.add(app_id)
+            game_id = game.get("game_id", app_id)
+            if not isinstance(game_id, str) or not game_id.strip() or game_id in seen_games:
+                raise ValueError("Game IDs must be nonempty and unique per genre")
+            seen_games.add(game_id)
+            overrides = game.get("market_app_ids", {})
+            if not isinstance(overrides, dict) or any(c not in MARKETS for c in overrides):
+                raise ValueError("Market overrides require supported country keys")
+            if any(value is not None and not _valid_app_id(value) for value in overrides.values()):
+                raise ValueError("Market App IDs must be numeric strings or explicit null")
+            for field in ("market_mapping_sources", "market_mapping_notes"):
+                values = game.get(field, {})
+                if (not isinstance(values, dict)
+                        or any(c not in overrides for c in values)
+                        or any(not isinstance(v, str) or not v.strip() for v in values.values())):
+                    raise ValueError(f"{field} must describe configured market overrides")
+            signature = (app_id, title, tuple(sorted(overrides.items())))
+            if game_id in identities and identities[game_id] != signature:
+                raise ValueError("A game must have consistent listings across genres")
+            identities[game_id] = signature
+            for country in MARKETS:
+                resolved_id, _ = market_listing(game, country)
+                if resolved_id is not None:
+                    if resolved_id in market_ids[country]:
+                        raise ValueError(f"Duplicate listing in {country} within one genre")
+                    market_ids[country].add(resolved_id)
 
 
 def collect(config: dict | None = None, *, fetch=None, clock=None, run_id: str | None = None):
@@ -100,6 +144,7 @@ def collect(config: dict | None = None, *, fetch=None, clock=None, run_id: str |
             common = {
                 "run_id": run_id, "snapshot_id": uuid4().hex,
                 "retrieved_at_utc": stamp, "country": country, "store": "ios",
+                "roster_version": config.get("roster_version", "custom"),
                 "feed_type": CHARTS["top-grossing"], "genre": genre,
                 "genre_id": spec["genre_id"], "requested_depth": depth,
                 "coverage_depth": len(entries), "chart_status": chart_status,
@@ -109,14 +154,34 @@ def collect(config: dict | None = None, *, fetch=None, clock=None, run_id: str |
             statuses.append({
                 **common, "source_count": len(entries),
                 "chart_complete": chart_status == "complete",
+                "unresolved_game_ids": ";".join(
+                    g.get("game_id", g["app_id"]) for g in spec["games"]
+                    if market_listing(g, country)[0] is None),
             })
             by_id = {entry["app_id"]: entry for entry in entries}
             for game in spec["games"]:
-                entry = by_id.get(game["app_id"])
-                state = ("ranked" if entry else "outside-chart" if chart_status == "complete"
-                         else "error" if chart_status == "error" else "unknown")
+                app_id, mapping_status = market_listing(game, country)
+                entry = by_id.get(app_id) if app_id is not None else None
+                if chart_status == "error":
+                    state, reason = "error", "chart_retrieval_or_validation_failed"
+                elif app_id is None:
+                    state, reason = "unknown", "unresolved_market_listing"
+                elif entry:
+                    state, reason = "ranked", "observed_app_id"
+                elif chart_status == "complete":
+                    state, reason = "outside-chart", "absent_from_complete_requested_chart"
+                else:
+                    state, reason = "unknown", "incomplete_chart"
+                reference = game.get("market_mapping_sources", {}).get(country, "")
+                if not reference and app_id is not None:
+                    reference = f"https://apps.apple.com/{country.lower()}/app/id{app_id}"
                 rows.append({
-                    **common, "app_id": game["app_id"], "title": game["title"],
+                    **common, "app_id": app_id, "title": game["title"],
+                    "game_id": game.get("game_id", game["app_id"]),
+                    "canonical_app_id": game["app_id"], "mapping_status": mapping_status,
+                    "mapping_source_url": reference,
+                    "mapping_note": game.get("market_mapping_notes", {}).get(country, ""),
+                    "status_reason": reason,
                     "observed_title": entry["title"] if entry else "",
                     "rank": entry["position"] if entry else None, "status": state,
                     "store_url": entry["store_url"] if entry else "",
@@ -141,6 +206,10 @@ def main(argv: list[str] | None = None) -> int:
         "chart_statuses": {state: sum(s["chart_status"] == state for s in statuses)
                            for state in ("complete", "partial", "empty", "error")},
         "output_directory": str(args.output),
+        "unresolved_listings": [{"country": r["country"], "game_id": r["game_id"]}
+                                for r in rows if r["mapping_status"] == "unresolved"],
+        "game_statuses": {state: sum(r["status"] == state for r in rows)
+                          for state in ("ranked", "outside-chart", "unknown", "error")},
     }))
     return int(any(s["chart_status"] == "error" for s in statuses))
 

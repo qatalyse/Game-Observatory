@@ -1,4 +1,5 @@
 {
+  "roster_version": "regional-listings-v2",
   "requested_depth": 100,
   "genres": [
     {
@@ -7,11 +8,29 @@
       "games": [
         {
           "app_id": "1517783697",
-          "title": "Genshin Impact"
+          "title": "Genshin Impact",
+          "game_id": "genshin-impact",
+          "market_app_ids": {
+            "CN": "1467190251",
+            "VN": "6451477469"
+          },
+          "market_mapping_sources": {
+            "CN": "https://apps.apple.com/cn/app/原神/id1467190251",
+            "VN": "https://apps.apple.com/vn/app/genshin-impact-funtap/id6451477469"
+          }
         },
         {
           "app_id": "1599719154",
-          "title": "Honkai: Star Rail"
+          "title": "Honkai: Star Rail",
+          "game_id": "honkai-star-rail",
+          "market_app_ids": {
+            "CN": "1523037824",
+            "VN": "6451473600"
+          },
+          "market_mapping_sources": {
+            "CN": "https://apps.apple.com/cn/app/崩坏-星穹铁道/id1523037824",
+            "VN": "https://apps.apple.com/vn/app/honkai-star-rail-3t-online/id6451473600"
+          }
         }
       ]
     },
@@ -21,23 +40,84 @@
       "games": [
         {
           "app_id": "1517783697",
-          "title": "Genshin Impact"
+          "title": "Genshin Impact",
+          "game_id": "genshin-impact",
+          "market_app_ids": {
+            "CN": "1467190251",
+            "VN": "6451477469"
+          },
+          "market_mapping_sources": {
+            "CN": "https://apps.apple.com/cn/app/原神/id1467190251",
+            "VN": "https://apps.apple.com/vn/app/genshin-impact-funtap/id6451477469"
+          }
         },
         {
           "app_id": "1599719154",
-          "title": "Honkai: Star Rail"
+          "title": "Honkai: Star Rail",
+          "game_id": "honkai-star-rail",
+          "market_app_ids": {
+            "CN": "1523037824",
+            "VN": "6451473600"
+          },
+          "market_mapping_sources": {
+            "CN": "https://apps.apple.com/cn/app/崩坏-星穹铁道/id1523037824",
+            "VN": "https://apps.apple.com/vn/app/honkai-star-rail-3t-online/id6451473600"
+          }
         },
         {
           "app_id": "1606356401",
-          "title": "Zenless Zone Zero"
+          "title": "Zenless Zone Zero",
+          "game_id": "zenless-zone-zero",
+          "market_app_ids": {
+            "CN": "1606359076",
+            "VN": "6476137851"
+          },
+          "market_mapping_sources": {
+            "CN": "https://apps.apple.com/cn/app/绝区零/id1606359076",
+            "VN": "https://apps.apple.com/vn/app/zenless-zone-zero-gamota/id6476137851"
+          }
         },
         {
           "app_id": "1336342304",
-          "title": "Honkai Impact 3rd"
+          "title": "Honkai Impact 3rd",
+          "game_id": "honkai-impact-3rd",
+          "market_app_ids": {
+            "SG": "1299582178",
+            "JP": "1172809651",
+            "KR": "1286705196",
+            "CN": "1143402987",
+            "MY": "1299582178",
+            "TH": "1299582178",
+            "ID": "1299582178",
+            "PH": "1299582178",
+            "VN": "6448864292"
+          },
+          "market_mapping_sources": {
+            "SG": "https://apps.apple.com/sg/app/honkai-impact-3/id1299582178",
+            "JP": "https://apps.apple.com/jp/app/崩壊3rd/id1172809651",
+            "KR": "https://apps.apple.com/kr/app/붕괴3rd/id1286705196",
+            "CN": "https://apps.apple.com/cn/app/崩坏3/id1143402987",
+            "MY": "https://apps.apple.com/my/app/honkai-impact-3/id1299582178",
+            "TH": "https://apps.apple.com/th/app/honkai-impact-3/id1299582178",
+            "ID": "https://apps.apple.com/id/app/honkai-impact-3/id1299582178",
+            "PH": "https://apps.apple.com/ph/app/honkai-impact-3/id1299582178",
+            "VN": "https://apps.apple.com/vn/app/honkai-impact-3-vn/id6448864292"
+          }
         },
         {
           "app_id": "1517957388",
-          "title": "Tears of Themis"
+          "title": "Tears of Themis",
+          "game_id": "tears-of-themis",
+          "market_app_ids": {
+            "CN": "1507310279",
+            "VN": null
+          },
+          "market_mapping_sources": {
+            "CN": "https://apps.apple.com/cn/app/未定事件簿/id1507310279"
+          },
+          "market_mapping_notes": {
+            "VN": "Global listing 1517957388 returned HTTP 404 in VN during audit; a regional listing has not been verified. This does not prove unavailability."
+          }
         }
       ]
     }

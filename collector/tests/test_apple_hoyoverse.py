@@ -21,8 +21,14 @@ STAR_RAIL = "1599719154"
 
 class TargetedTests(unittest.TestCase):
     def collect(self, response=None, fetch=None):
+        # Generic response/error tests retain coverage of the legacy default-ID schema.
+        config = tracker.load_config()
+        for genre in config["genres"]:
+            for game in genre["games"]:
+                for field in ("market_app_ids", "market_mapping_sources", "market_mapping_notes"):
+                    game.pop(field, None)
         return tracker.collect(
-            fetch=fetch or (lambda url: (response, 200)),
+            config, fetch=fetch or (lambda url: (response, 200)),
             clock=lambda: FIXED, run_id="fixture-run",
         )
 
@@ -244,6 +250,138 @@ class TargetedTests(unittest.TestCase):
         self.assertIn("contents: read", workflow)
         for forbidden in ("schedule:", "secrets.", "supabase", "tableau", "git push"):
             self.assertNotIn(forbidden, workflow.lower())
+
+
+class RegionalListingTests(unittest.TestCase):
+    def test_audited_regional_ids(self):
+        games = {g["game_id"]: g for s in tracker.load_config()["genres"] for g in s["games"]}
+        expected = {
+            "genshin-impact": {"CN": "1467190251", "VN": "6451477469"},
+            "honkai-star-rail": {"CN": "1523037824", "VN": "6451473600"},
+            "zenless-zone-zero": {"CN": "1606359076", "VN": "6476137851"},
+            "honkai-impact-3rd": {
+                "SG": "1299582178", "US": "1336342304", "JP": "1172809651",
+                "KR": "1286705196", "CN": "1143402987", "MY": "1299582178",
+                "TH": "1299582178", "ID": "1299582178", "PH": "1299582178",
+                "VN": "6448864292",
+            },
+            "tears-of-themis": {"CN": "1507310279", "VN": None},
+        }
+        for game_id, markets in expected.items():
+            for country, app_id in markets.items():
+                with self.subTest(game_id=game_id, country=country):
+                    self.assertEqual(tracker.market_listing(games[game_id], country)[0], app_id)
+        self.assertEqual(len(games), 5)
+        self.assertEqual(tracker.market_listing(games["genshin-impact"], "US"),
+                         (GENSHIN, "default"))
+
+    def test_reported_cn_and_vn_ranks_are_offline_regression_fixtures(self):
+        # These reproduce the reported positions, not a claim about live rankings.
+        fixture_ranks = {
+            ("CN", "7002"): {"1523037824": 1, "1467190251": 2},
+            ("CN", "7014"): {"1523037824": 3, "1467190251": 5,
+                             "1143402987": 45, "1507310279": 60, "1606359076": 12},
+            ("VN", "7002"): {"6451473600": 9, "6451477469": 14},
+            ("VN", "7014"): {"6451473600": 7, "6451477469": 11,
+                             "6448864292": 40, "6476137851": 19},
+        }
+        calls = []
+        def fetch(url):
+            calls.append(url)
+            country = url.split("/")[3].upper()
+            genre_id = url.split("/genre=")[1].split("/")[0]
+            ids = [str(900000 + n) for n in range(100)]
+            for app_id, rank in fixture_ranks.get((country, genre_id), {}).items():
+                ids[rank - 1] = app_id
+            return payload(ids), 200
+
+        rows, statuses = tracker.collect(fetch=fetch, run_id="regional-regression")
+        self.assertEqual((len(calls), len(statuses), len(rows)), (20, 20, 70))
+        self.assertEqual(len(set(calls)), 20)
+        self.assertEqual(len({(r["country"], r["genre_id"], r["game_id"]) for r in rows}), 70)
+        for row in rows:
+            ranks = fixture_ranks.get((row["country"], str(row["genre_id"])), {})
+            if row["app_id"] in ranks:
+                self.assertEqual(row["status"], "ranked")
+                self.assertEqual(row["rank"], ranks[row["app_id"]])
+                self.assertEqual(row["mapping_status"], "market-override")
+        star_rows = [r for r in rows if r["game_id"] == "honkai-star-rail"]
+        self.assertEqual({r["canonical_app_id"] for r in star_rows}, {STAR_RAIL})
+        self.assertEqual({r["app_id"] for r in star_rows},
+                         {STAR_RAIL, "1523037824", "6451473600"})
+
+    def test_unresolved_listing_never_falls_back_or_claims_outside_chart(self):
+        ids = [str(800000 + n) for n in range(100)]
+        ids[0] = "1517957388"  # Even a default-ID hit must not override an explicit null.
+        rows, statuses = tracker.collect(fetch=lambda u: (payload(ids), 200))
+        row = next(r for r in rows if r["country"] == "VN" and r["game_id"] == "tears-of-themis")
+        self.assertEqual(row["chart_status"], "complete")
+        self.assertEqual(row["status"], "unknown")
+        self.assertEqual(row["status_reason"], "unresolved_market_listing")
+        self.assertEqual(row["mapping_status"], "unresolved")
+        self.assertIsNone(row["app_id"])
+        self.assertIsNone(row["rank"])
+        self.assertIn("404", row["mapping_note"])
+        status = next(s for s in statuses if s["snapshot_id"] == row["snapshot_id"])
+        self.assertEqual(status["unresolved_game_ids"], "tears-of-themis")
+
+    def test_override_is_market_specific_and_never_matches_global_id_in_cn(self):
+        ids = [str(700000 + n) for n in range(100)]
+        ids[0], ids[4] = GENSHIN, "1467190251"
+        rows, _ = tracker.collect(fetch=lambda u: (payload(ids), 200))
+        cn = next(r for r in rows if r["country"] == "CN" and r["game_id"] == "genshin-impact")
+        us = next(r for r in rows if r["country"] == "US" and r["game_id"] == "genshin-impact")
+        self.assertEqual((cn["app_id"], cn["rank"]), ("1467190251", 5))
+        self.assertEqual((us["app_id"], us["rank"]), (GENSHIN, 1))
+        self.assertEqual(cn["game_id"], us["game_id"])
+        self.assertEqual(cn["canonical_app_id"], us["canonical_app_id"])
+
+    def test_partial_and_error_semantics_survive_regional_matching(self):
+        def fetch(url):
+            if "/cn/" in url:
+                return payload(("1523037824",)), 200
+            if "/vn/" in url:
+                raise OSError("offline")
+            return payload(()), 200
+        rows, statuses = tracker.collect(fetch=fetch)
+        cn_star = next(r for r in rows if r["country"] == "CN" and r["game_id"] == "honkai-star-rail")
+        cn_genshin = next(r for r in rows if r["country"] == "CN" and r["game_id"] == "genshin-impact")
+        self.assertEqual((cn_star["rank"], cn_star["status"], cn_star["chart_status"]), (1, "ranked", "partial"))
+        self.assertEqual((cn_genshin["rank"], cn_genshin["status"]), (None, "unknown"))
+        self.assertEqual({r["status"] for r in rows if r["country"] == "VN"}, {"error"})
+        self.assertEqual(len(statuses), 20)
+
+    def test_invalid_market_config_rejected_before_fetch(self):
+        original = tracker.load_config()
+        for change in (
+            lambda c: c["genres"][0]["games"][0]["market_app_ids"].update(ZZ="123"),
+            lambda c: c["genres"][0]["games"][0]["market_app_ids"].update(CN=123),
+            lambda c: c["genres"][0]["games"][0].update(game_id=""),
+            lambda c: c["genres"][0]["games"][0]["market_app_ids"].update(CN="1523037824"),
+            lambda c: c["genres"][0]["games"][0]["market_app_ids"].update(CN="111"),
+            lambda c: c["genres"][0]["games"][0].update(market_mapping_sources={"US": "unexpected"}),
+        ):
+            with self.subTest(change=change):
+                config = deepcopy(original)
+                change(config)
+                with self.assertRaises(ValueError):
+                    tracker.collect(config, fetch=lambda u: self.fail("invalid config fetched"))
+
+    def test_regional_csv_fields_keep_stable_identity_and_blank_unresolved_id(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(tracker, "fetch_json", return_value=(payload(()), 200)), \
+             contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(tracker.main(["--output", directory]), 0)
+            with (Path(directory) / "apple_hoyoverse_rankings.csv").open(newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                self.assertTrue({"game_id", "canonical_app_id", "mapping_status",
+                                 "mapping_source_url", "mapping_note", "status_reason"} <= set(reader.fieldnames))
+                rows = list(reader)
+        cn = next(r for r in rows if r["country"] == "CN" and r["game_id"] == "genshin-impact")
+        vn_tot = next(r for r in rows if r["country"] == "VN" and r["game_id"] == "tears-of-themis")
+        self.assertEqual((cn["app_id"], cn["canonical_app_id"]), ("1467190251", GENSHIN))
+        self.assertEqual((vn_tot["app_id"], vn_tot["rank"], vn_tot["status"]), ("", "", "unknown"))
+        self.assertEqual(len(rows), 70)
 
 
 if __name__ == "__main__":
