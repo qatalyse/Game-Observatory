@@ -17,15 +17,16 @@ No Tableau refresh or publication is performed.
 ## Dependencies and validation order
 
 The regional listing fix from PR #3 has been merged. This change targets
-`main` and uses the focused v3 roster: Adventure contains Genshin and Star Rail;
-Role-Playing contains those two plus ZZZ. The publisher derives its expected
-target set from that config and rejects old/different rosters, CSV schemas and
+`main` and uses roster v4: Adventure contains Genshin and Star Rail;
+Role-Playing contains those two plus ZZZ, Honkai Impact 3rd and Tears of Themis;
+Action contains ZZZ and Honkai Impact 3rd. Card and Simulation are not requested.
+The publisher derives its expected target set from that config and rejects old/different rosters, CSV schemas and
 mismatched regional IDs.
 
 1. Use the existing manual collector on this PR's branch to validate a fresh
-   focused-roster collection: 50 game rows, 20 chart rows, and the correct
+   three-genre collection: 90 game rows, 30 chart rows, and the correct
    CN/VN regional IDs. Not every title must be ranked for validation to pass.
-2. Merge this daily/Sheets change after that review.
+2. Merge the roster update after that review.
 3. Configure a **test spreadsheet** and Google identity below.
 4. Manually run **Daily HoYoverse Apple retrieval and Sheets**, leaving
    **publish_to_sheets unchecked**. This collects/validates CSVs with no Google
@@ -83,8 +84,8 @@ Artifacts contain only the two explicitly named CSVs, never credential files.
 
 ## Storage and rerun rules
 
-Each focused default collection makes **20 chart requests** and yields **50 game
-records** plus **20 chart records**. CSV artifacts are retained for 30 days even
+Each default collection makes **30 chart requests** and yields **90 game
+records** plus **30 chart records**. CSV artifacts are retained for 30 days even
 if collection fails; they are uploaded before the separate publishing job.
 
 - `HoYoRankHistory`: one row per game/market/genre for the accepted daily snapshot.
@@ -100,12 +101,16 @@ remain text. Null ranks are blank cells, never zero or 101. Text is written as
 literal strings so titles beginning with `=` cannot become formulas.
 Use `game_id` for cross-market grouping and `app_id` for the actual regional
 listing. Unknown/outside-chart semantics remain those of the regional collector.
-Honkai Impact 3rd and Tears of Themis are excluded from the focused default;
-previous CSV artifacts or sheet history containing them are not deleted.
+VN Tears of Themis remains an unresolved listing: its rank and App ID stay
+blank with `unknown` / `unresolved_market_listing`, even on a complete chart.
+Themis uses only existing Role-Playing chart responses; it adds no chart requests.
 
 **First successful upload per Singapore date wins.** Additional collections or
 reruns on that date do not append duplicates or replace the accepted snapshot,
-even if their source values differ. Partial/empty charts and unresolved
+even if their source values or roster version differ. If v3 was already
+published that day, merging v4 does not replace it; the next Singapore date
+uses the expanded scope. Manual CSV artifacts can still show the new scope.
+Partial/empty charts and unresolved
 listings are valid explicit outcomes; they can be part of that first snapshot.
 Any chart request/parse error blocks the entire Sheets upload and fails the job
 after preserving CSVs, so collection can be retried before a daily snapshot
