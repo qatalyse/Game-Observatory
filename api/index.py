@@ -47,38 +47,36 @@ class handler(BaseHTTPRequestHandler):
         supplied = self.headers.get("X-Dev-Token", "")
         if not expected:
             return self.respond(503, {"error": "Dev collection is disabled. Set DEV_COLLECT_TOKEN in Vercel environment variables."})
-        if not secrets.compare_digest(supplied, expected):
+        if not secrets.compare_digest(supplied.encode("utf-8"), expected.encode("utf-8")):
             return self.respond(401, {"error": "Invalid dev token"})
 
         try:
+            if self.headers.get("Transfer-Encoding"):
+                return self.respond(400, {"error": "Unsupported transfer encoding"})
             length = int(self.headers.get("Content-Length", "0"))
+            if length < 0:
+                return self.respond(400, {"error": "Invalid diagnostic request length"})
             if length > 1024:
                 return self.respond(413, {"error": "Diagnostic request too large"})
             request_data = self.rfile.read(length) if length else b"{}"
             options = json.loads(request_data.decode("utf-8"))
+            if not isinstance(options, dict):
+                return self.respond(400, {"error": "Diagnostic options must be an object"})
             feed_type = options.get("feed_type", "top-grossing")
             genre = options.get("genre", "games")
             country = options.get("market", "SG")
-            tracked_app_ids = options.get("tracked_app_ids")
-            if feed_type not in CHARTS or genre not in GENRES:
+            if not isinstance(feed_type, str) or not isinstance(genre, str) or feed_type not in CHARTS or genre not in GENRES:
                 return self.respond(400, {"error": "Unsupported feed type or genre"})
-            if country not in MARKETS:
+            if not isinstance(country, str) or country not in MARKETS:
                 return self.respond(400, {"error": "Unsupported Apple storefront"})
-            if tracked_app_ids is not None:
-                if not isinstance(tracked_app_ids, list) or len(tracked_app_ids) > 100:
-                    return self.respond(400, {"error": "tracked_app_ids must be a list of at most 100 App Store IDs"})
-                if any(not isinstance(value, str) or not value.isdigit() for value in tracked_app_ids):
-                    return self.respond(400, {"error": "Each tracked App Store ID must contain digits only"})
-                if len(set(tracked_app_ids)) != len(tracked_app_ids):
-                    return self.respond(400, {"error": "Tracked App Store IDs must be unique"})
         except (ValueError, UnicodeDecodeError, AttributeError):
             return self.respond(400, {"error": "Invalid diagnostic request"})
 
         try:
             rows, statuses = collect(
                 countries=(country,), genres=(genre,),
-                feed_types=(feed_type,), depth=50 if feed_type == "top-grossing" else 20,
-                tracked_app_ids=set(tracked_app_ids) if tracked_app_ids is not None else None,
+                feed_types=(feed_type,), depth=100 if feed_type == "top-grossing" else 20,
+                full_chart=feed_type == "top-grossing",
             )
         except Exception as exc:
             traceback.print_exc()
@@ -92,6 +90,6 @@ class handler(BaseHTTPRequestHandler):
             "rankings": compact_rows,
             "statuses": statuses,
             "request_count": 1,
-            "tracked_app_ids_selected": tracked_app_ids if tracked_app_ids is not None else None,
-            "snapshot_policy": "rounded_tens_plus_five_on_exact_tens" if feed_type == "top-grossing" else "all_new_applications",
+            "requested_depth": 100 if feed_type == "top-grossing" else 20,
+            "collection_mode": "full_chart" if feed_type == "top-grossing" else "discovery_feed",
         })
