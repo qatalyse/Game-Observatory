@@ -22,7 +22,12 @@ GAMES = {
     "413150": "Stardew Valley",
     "1222670": "The Sims 4",
     "47890": "The Sims 3",
-    "3314070": "The Sims 2 Legacy Collection",
+    "4025700": "Heartopia",
+    "4732690": "Arknights: Endfield",
+    "3061570": "Persona5: The Phantom X",
+    "3564740": "Where Winds Meet",
+    "3092660": "Reverse: 1999",
+    "4195600": "AFK Journey",
 }
 SOURCE = "steam_web_api_get_number_of_current_players"
 ENDPOINT = "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
