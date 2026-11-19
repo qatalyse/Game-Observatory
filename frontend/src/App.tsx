@@ -217,10 +217,11 @@ function DashboardPanel({ title, description, emptyLabel }: PanelInfo) {
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<Section>("Overview");
+  const embedMode = new URLSearchParams(window.location.search).get("embed") === "true";
 
   return (
     <div className="site-shell">
-      <header className="site-header">
+      {!embedMode && <header className="site-header">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true" />
           <div className="brand-text">
@@ -229,7 +230,7 @@ export default function App() {
           </div>
         </div>
         <span className="header-note">Monitoring games over time</span>
-      </header>
+      </header>}
 
       <nav className="site-nav" aria-label="Dashboard sections">
         {sections.map((section) => (
