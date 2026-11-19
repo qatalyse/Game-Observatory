@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import SteamDevCollection from "./SteamDevCollection";
+import TableauCalculations from "./TableauCalculations";
 
 type Ranking = {
   position: number; position_semantics: string; app_id: string; title: string;
@@ -44,7 +45,7 @@ function TableauDashboard() {
       <div className="panel-heading">
         <div>
           <h2>Gaming Industry Insights</h2>
-          <p>Current display: Concurrent Steam player monitoring | Apple App Store revenue rankings</p>
+          <p>Current display: Apple App Store cross market revenue rankings | Concurrent Steam player monitoring</p>
         </div>
         <a className="apple-store-link" href="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1" target="_blank" rel="noreferrer">Open in Tableau Public</a>
       </div>
@@ -183,10 +184,7 @@ type PanelInfo = {
   emptyLabel: string;
 };
 
-const panels: Record<Section, PanelInfo[]> = {
-  Overview: [
-    { title: "SQL case studies", description: "Analytical questions, PostgreSQL queries, and findings.", emptyLabel: "Case studies will appear after data validation" },
-  ],
+const panels: Record<Exclude<Section, "Overview">, PanelInfo[]> = {
   Steam: [
     { title: "Concurrent players", description: "Historical measurements from selected Steam games.", emptyLabel: "No player snapshots collected yet" },
     { title: "Reviews and achievements", description: "Trends derived from public Steam records.", emptyLabel: "No review or achievement data yet" },
@@ -263,13 +261,9 @@ export default function App() {
         {activeSection === "Steam" && <SteamDevCollection />}
 
         {activeSection === "Overview" ? (
-          <div className="sql-analysis-layout">
+          <div className="overview-layout">
             <TableauDashboard />
-            <div className="sql-case-studies">
-              {panels.Overview.map((panel) => (
-                <DashboardPanel key={panel.title} {...panel} />
-              ))}
-            </div>
+            <TableauCalculations />
           </div>
         ) : (
           <div className="panel-grid">
