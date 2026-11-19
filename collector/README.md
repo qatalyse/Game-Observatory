@@ -113,8 +113,8 @@ and feed-level updated timestamp and field names. Optional fields may be
 absent. Status CSV records top-level feed fields and first-entry field names
 for raw schema inspection.
 
-No database or Sheets writes, Tableau publication or scheduled collection
-is performed. CSVs are local outputs and require explicit retention.
+The diagnostic and manual CSV entry points perform no database or Sheets writes,
+Tableau publication or scheduled collection. CSVs are local outputs and require explicit retention.
 
 These feeds are legacy Apple-hosted endpoints and their support/availability
 is not guaranteed. Test current HTTP responses, field coverage and category
@@ -128,3 +128,10 @@ matches configured App IDs in Adventure and Role-Playing Top Grossing charts
 across all ten markets. It exports one game record per target and separate
 chart statuses, including unknowns and errors. See the [roster, CSV contract
 and status rules](../docs/APPLE_HOYOVERSE_TRACKER.md).
+
+## Optional daily retrieval and Google Sheets
+
+The separate **Daily HoYoverse Apple retrieval and Sheets** workflow is prepared
+for 09:17 Singapore time but remains disabled until explicitly enabled after
+regional-data and test-upload validation. Manual runs default to CSV-only dry-run
+validation. See [cloud setup, history and duplicate protection](../docs/APPLE_DAILY_SHEETS.md).
