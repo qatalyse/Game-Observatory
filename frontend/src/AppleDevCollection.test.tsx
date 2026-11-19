@@ -48,7 +48,7 @@ describe("Apple full Top 100 diagnostics", () => {
     expect(panel.queryAllByRole("checkbox")).toHaveLength(0);
     expect(panel.queryByRole("group", { name: /tracked games/i })).toBeNull();
     expect(panel.queryByPlaceholderText("Numeric App Store ID")).toBeNull();
-    expect(panel.getByRole("option", { name: "Action", exact: true })).toBeTruthy();
+    expect(panel.getByRole("option", { name: "Action" })).toBeTruthy();
     await userEvent.selectOptions(panel.getByRole("combobox", { name: "Category" }), "simulation");
     await userEvent.selectOptions(panel.getByRole("combobox", { name: "Market" }), "VN");
     expect(fetch).not.toHaveBeenCalled();
