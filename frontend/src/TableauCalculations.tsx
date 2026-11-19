@@ -1,4 +1,7 @@
-const rankRangeCalculation = `IF MIN([Rank]) = WINDOW_MAX(MIN([Rank]))
+const rankRangeCalculation = `// Rank Range Label
+// Display highest and lowest rankings cross markets
+
+IF MIN([Rank]) = WINDOW_MAX(MIN([Rank]))
 AND INDEX() = WINDOW_MIN(
     IF MIN([Rank]) = WINDOW_MAX(MIN([Rank]))
     THEN INDEX()
@@ -26,8 +29,6 @@ export default function TableauCalculations() {
         </div>
       </div>
       <div className="calculation-body">
-        <h3>Rank Range Label</h3>
-        <p>Shows a single rank or the minimum–maximum rank range, with one label per table-calculation window.</p>
         <pre tabIndex={0} aria-label="Rank Range Label calculation"><code>{rankRangeCalculation}</code></pre>
       </div>
     </section>
