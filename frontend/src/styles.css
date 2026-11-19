@@ -12,6 +12,8 @@ body { min-width: 320px; }
 button { font: inherit; }
 .site-shell { min-height: 100svh; display: flex; flex-direction: column; background: #0b1018; }
 .site-header {
+  position: sticky; top: 0; z-index: 20;
+  background: #0b1018;
   display: flex; align-items: center; justify-content: space-between; gap: 20px;
   min-height: 82px; padding: 20px clamp(20px, 4vw, 64px);
   border-bottom: 1px solid #273240;
