@@ -45,7 +45,7 @@ function TableauDashboard() {
       <div className="panel-heading">
         <div>
           <h2>Gaming Industry Insights</h2>
-          <p>Current display: Apple App Store cross market revenue rankings | Concurrent Steam player monitoring</p>
+          <p>Current display:  Concurrent Steam player monitoring (selected games) | Apple App Store cross market top grossing ranking | 7 day top grossing ranking</p>
         </div>
         <a className="apple-store-link" href="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1" target="_blank" rel="noreferrer">Open in Tableau Public</a>
       </div>
@@ -226,7 +226,7 @@ export default function App() {
           <span className="brand-mark" aria-hidden="true" />
           <div className="brand-text">
             <span className="site-name">Game Observatory</span>
-            <span className="site-subtitle">A Tableau and SQL project</span>
+            <span className="site-subtitle">A Tableau dashboard project</span>
           </div>
         </div>
         <span className="header-note">Monitoring games over time</span>
