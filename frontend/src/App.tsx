@@ -278,7 +278,7 @@ export default function App() {
 
       <footer className="site-footer">
         <span>Game Observatory</span>
-        <span>Data collection and Tableau integration are upcoming.</span>
+        <span>Data collection and Tableau integration refreshed daily.</span>
       </footer>
     </div>
   );
