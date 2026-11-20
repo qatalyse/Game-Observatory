@@ -82,6 +82,15 @@ class HistoryTests(unittest.TestCase):
             self.assertEqual(row["record_key"],
                 f"apple-hoyoverse:2026-11-19:{row['country']}:{row['genre_id']}:{row['game_id']}")
 
+    def test_historical_cutoff_uses_singapore_day_even_when_utc_date_is_yesterday(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            saved(directory)
+            singapore_morning = datetime(2026, 11, 19, 17, tzinfo=timezone.utc)
+            batch = history.historical_batch(directory, RUN_ID, "1", "2026-11-19",
+                                             clock=lambda: singapore_morning)
+            self.assertEqual(batch["collection_date"], "2026-11-19")
+
     def test_wrong_date_source_attempt_and_source_errors_block_before_google_access(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
