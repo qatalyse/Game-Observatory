@@ -19,6 +19,28 @@ THEN
     END
 END`;
 
+const playerCountPercentageCalculation = `// Player Count and Percentage Label
+// Show the percentage of the table-calculation total,
+// followed by the summed player count in parentheses.
+
+STR(ROUND(
+    SUM([Player Count])
+    / TOTAL(SUM([Player Count])) * 100, 2
+))
++ "% ("
++ STR(INT(SUM([Player Count])))
++ ")"`;
+
+const latestCollectionDateCalculation = `// Latest Collection Date
+// Find the latest date after extract, data source and context filters.
+
+{ FIXED : MAX([Collection Date]) }`;
+
+const isLatestCollectionDateCalculation = `// Is Latest Collection Date
+// Filter this field to True to show the latest available collection date.
+
+[Collection Date] = [Latest Collection Date]`;
+
 export default function TableauCalculations() {
   return (
     <section className="panel tableau-calculations" aria-label="Tableau Calculations">
@@ -30,6 +52,9 @@ export default function TableauCalculations() {
       </div>
       <div className="calculation-body">
         <pre tabIndex={0} aria-label="Rank Range Label calculation"><code>{rankRangeCalculation}</code></pre>
+        <pre tabIndex={0} aria-label="Player Count and Percentage Label calculation"><code>{playerCountPercentageCalculation}</code></pre>
+        <pre tabIndex={0} aria-label="Latest Collection Date calculation"><code>{latestCollectionDateCalculation}</code></pre>
+        <pre tabIndex={0} aria-label="Is Latest Collection Date calculation"><code>{isLatestCollectionDateCalculation}</code></pre>
       </div>
     </section>
   );
