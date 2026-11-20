@@ -28,6 +28,8 @@ GAMES = {
     "3564740": "Where Winds Meet",
     "3092660": "Reverse: 1999",
     "4195600": "AFK Journey",
+    "4019220": "Dressmaker",
+    "1401590": "Disney Dreamlight Valley",
 }
 SOURCE = "steam_web_api_get_number_of_current_players"
 ENDPOINT = "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"

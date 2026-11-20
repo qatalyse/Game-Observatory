@@ -135,3 +135,12 @@ The separate **Daily HoYoverse Apple retrieval and Sheets** workflow is prepared
 for 09:17 Singapore time but remains disabled until explicitly enabled after
 regional-data and test-upload validation. Manual runs default to CSV-only dry-run
 validation. See [cloud setup, history and duplicate protection](../docs/APPLE_DAILY_SHEETS.md).
+
+## Optional Steam daily retrieval and Google Sheets
+
+**Daily Steam retrieval and Sheets** uses the Steam CSV exporter and shared
+19-game roster. Manual runs default to CSV-only validation; its 09:17 Singapore
+schedule is gated off until `STEAM_SHEETS_DAILY_ENABLED=true`. The Steam
+destination is separate from HoYoverse's spreadsheet, while the existing
+service account and federation are reused. See [setup, schemas and retry
+rules](../docs/STEAM_DAILY_SHEETS.md).

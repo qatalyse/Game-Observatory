@@ -29,6 +29,8 @@ class SteamTests(unittest.TestCase):
             "3564740": "Where Winds Meet",
             "3092660": "Reverse: 1999",
             "4195600": "AFK Journey",
+            "4019220": "Dressmaker",
+            "1401590": "Disney Dreamlight Valley",
         }
         self.assertEqual(steam.GAMES, expected)
         frontend = (Path(__file__).resolve().parents[2] / "frontend/src/SteamDevCollection.tsx").read_text(encoding="utf-8")
@@ -36,7 +38,7 @@ class SteamTests(unittest.TestCase):
         for app_id, name in expected.items():
             self.assertIn(f'{{ id: "{app_id}", name: "{name}" }}', frontend)
 
-    def test_all_seventeen_one_request_each_order_and_provenance(self):
+    def test_all_configured_games_one_request_each_order_and_provenance(self):
         calls = []
         lock = threading.Lock()
         clock = lambda: datetime(2026, 11, 18, tzinfo=timezone.utc)

@@ -18,6 +18,8 @@ export const steamGames = [
   { id: "3564740", name: "Where Winds Meet" },
   { id: "3092660", name: "Reverse: 1999" },
   { id: "4195600", name: "AFK Journey" },
+  { id: "4019220", name: "Dressmaker" },
+  { id: "1401590", name: "Disney Dreamlight Valley" },
 ];
 
 type PlayerResult = {

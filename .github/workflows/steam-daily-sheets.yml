@@ -1,0 +1,119 @@
+name: Daily Steam retrieval and Sheets
+
+on:
+  schedule:
+    # Placeholder: 09:17 Asia/Singapore (UTC+8).
+    - cron: "17 1 * * *"
+  workflow_dispatch:
+    inputs:
+      publish_to_sheets:
+        description: "Upload this snapshot to the separate Steam spreadsheet"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: steam-daily-sheets
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    # Missing/false variable disables automatic requests and uploads.
+    if: github.event_name == 'workflow_dispatch' || vars.STEAM_SHEETS_DAILY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      validated: ${{ steps.validate.outcome == 'success' }}
+    defaults:
+      run:
+        working-directory: collector
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test offline fixtures
+        run: python -m unittest discover -s tests -v
+      - name: Collect current players for all configured Steam games
+        id: collect
+        continue-on-error: true
+        run: python -m game_observatory.steam_test_dataset --output data/steam-daily
+      - name: Validate batch without Google access
+        id: validate
+        if: steps.collect.outcome == 'success'
+        run: python -m game_observatory.steam_sheets --input data/steam-daily
+      - name: Retain both CSVs even when collection fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          # Stable across attempts so a failed publish job can reuse collection.
+          name: steam-daily-${{ github.run_id }}
+          overwrite: true
+          path: |
+            collector/data/steam-daily/steam_players.csv
+            collector/data/steam-daily/steam_statuses.csv
+          if-no-files-found: error
+          retention-days: 30
+      - name: Fail after retaining source errors
+        if: steps.collect.outcome == 'failure'
+        run: |
+          echo "Steam collection failed. CSVs retained; Sheets publishing is skipped."
+          exit 1
+
+  publish:
+    needs: collect
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      needs.collect.result == 'success' && needs.collect.outputs.validated == 'true' &&
+      ((github.event_name == 'schedule' && vars.STEAM_SHEETS_DAILY_ENABLED == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish_to_sheets))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: collector
+    env:
+      STEAM_SHEETS_SPREADSHEET_ID: ${{ vars.STEAM_SHEETS_SPREADSHEET_ID }}
+      STEAM_SHEETS_PLAYERS_TAB: ${{ vars.STEAM_SHEETS_PLAYERS_TAB || 'SteamPlayerHistory' }}
+      STEAM_SHEETS_STATUSES_TAB: ${{ vars.STEAM_SHEETS_STATUSES_TAB || 'SteamPlayerStatuses' }}
+      GOOGLE_WIF_PROVIDER: ${{ vars.GOOGLE_WIF_PROVIDER }}
+      GOOGLE_SERVICE_ACCOUNT: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check publishing setup
+        run: |
+          python - <<'PY'
+          import os
+          required = ("STEAM_SHEETS_SPREADSHEET_ID", "GOOGLE_WIF_PROVIDER", "GOOGLE_SERVICE_ACCOUNT")
+          missing = [name for name in required if not os.environ.get(name)]
+          if missing:
+              raise SystemExit("Configure repository variables: " + ", ".join(missing))
+          PY
+      - name: Install upload-only authentication dependency
+        run: python -m pip install -r requirements-sheets.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: steam-daily-${{ github.run_id }}
+          path: collector/data/steam-daily
+      - name: Authenticate to Google through short-lived federation
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GOOGLE_WIF_PROVIDER }}
+          service_account: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+      - name: Publish daily snapshot with duplicate protection
+        run: python -m game_observatory.steam_sheets --input data/steam-daily --publish
