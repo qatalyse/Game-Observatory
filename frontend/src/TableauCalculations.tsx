@@ -1,5 +1,4 @@
-const rankRangeCalculation = `// Rank Range Label
-// Display highest and lowest rankings cross markets
+const rankRangeCalculation = `// Display highest and lowest rankings cross markets
 
 IF MIN([Rank]) = WINDOW_MAX(MIN([Rank]))
 AND INDEX() = WINDOW_MIN(
@@ -19,9 +18,7 @@ THEN
     END
 END`;
 
-const playerCountPercentageCalculation = `// Player Count and Percentage Label
-// Show the percentage of the table-calculation total,
-// followed by the summed player count in parentheses.
+const playerCountPercentageCalculation = `// Display combined sum and percentage label
 
 STR(ROUND(
     SUM([Player Count])
@@ -31,14 +28,11 @@ STR(ROUND(
 + STR(INT(SUM([Player Count])))
 + ")"`;
 
-const latestCollectionDateCalculation = `// Latest Collection Date
-// Find the latest date after extract, data source and context filters.
+const latestCollectionDateCalculation = `// Find the latest extracted date and corresponding data
 
-{ FIXED : MAX([Collection Date]) }`;
+{ FIXED : MAX([Collection Date]) }
 
-const isLatestCollectionDateCalculation = `// Is Latest Collection Date
-// Filter this field to True to show the latest available collection date.
-
+// Filter this field to True to display latest available collection date.
 [Collection Date] = [Latest Collection Date]`;
 
 export default function TableauCalculations() {
@@ -53,8 +47,7 @@ export default function TableauCalculations() {
       <div className="calculation-body">
         <pre tabIndex={0} aria-label="Rank Range Label calculation"><code>{rankRangeCalculation}</code></pre>
         <pre tabIndex={0} aria-label="Player Count and Percentage Label calculation"><code>{playerCountPercentageCalculation}</code></pre>
-        <pre tabIndex={0} aria-label="Latest Collection Date calculation"><code>{latestCollectionDateCalculation}</code></pre>
-        <pre tabIndex={0} aria-label="Is Latest Collection Date calculation"><code>{isLatestCollectionDateCalculation}</code></pre>
+        <pre tabIndex={0} aria-label="Latest collection date and filter calculations"><code>{latestCollectionDateCalculation}</code></pre>
       </div>
     </section>
   );
