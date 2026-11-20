@@ -45,7 +45,7 @@ function TableauDashboard() {
       <div className="panel-heading">
         <div>
           <h2>Gaming Industry Insights</h2>
-          <p>Current display:  Concurrent Steam player monitoring (selected games) | Apple App Store cross market top grossing ranking | 7 day top grossing ranking</p>
+          <p>Current display: Concurrent Steam player monitoring (selected games) | App Store cross market top grossing ranking | 7 day top grossing ranking</p>
         </div>
         <a className="apple-store-link" href="https://public.tableau.com/views/GameMarketDataanalytics/Dashboard1" target="_blank" rel="noreferrer">Open in Tableau Public</a>
       </div>
