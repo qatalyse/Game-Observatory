@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import SteamDevCollection from "./SteamDevCollection";
 import TableauCalculations from "./TableauCalculations";
+import DailyRankings from "./DailyRankings";
 
 type Ranking = {
   position: number; position_semantics: string; app_id: string; title: string;
@@ -176,9 +177,9 @@ function AppleDevCollection() {
 
 
 
-type Section = "Overview" | "Steam" | "Apple Markets";
+type Section = "Overview" | "Daily Rankings" | "Steam" | "Apple Markets";
 
-const sections: Section[] = ["Overview", "Steam", "Apple Markets"];
+const sections: Section[] = ["Overview", "Daily Rankings", "Steam", "Apple Markets"];
 
 type PanelInfo = {
   title: string;
@@ -186,7 +187,7 @@ type PanelInfo = {
   emptyLabel: string;
 };
 
-const panels: Record<Exclude<Section, "Overview">, PanelInfo[]> = {
+const panels: Record<Exclude<Section, "Overview" | "Daily Rankings">, PanelInfo[]> = {
   Steam: [
     { title: "Concurrent players", description: "Historical measurements from selected Steam games.", emptyLabel: "No player snapshots collected yet" },
     { title: "Reviews and achievements", description: "Trends derived from public Steam records.", emptyLabel: "No review or achievement data yet" },
@@ -252,6 +253,8 @@ export default function App() {
             <h1>{activeSection}</h1>
             <p>{activeSection === "Overview"
               ? "Tableau visualizations based on Steam and App store data"
+              : activeSection === "Daily Rankings"
+                ? "Daily ranking changes across games, genres and markets."
               : activeSection === "Steam"
                 ? "Player activity, public reviews, and achievements."
                 : "App Store ranking observations across markets."}
@@ -268,6 +271,8 @@ export default function App() {
             <TableauDashboard />
             <TableauCalculations />
           </div>
+        ) : activeSection === "Daily Rankings" ? (
+          <DailyRankings />
         ) : (
           <div className="panel-grid">
             {panels[activeSection].map((panel) => (
