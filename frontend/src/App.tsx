@@ -255,9 +255,9 @@ export default function App() {
               ? "Tableau visualizations based on Steam and App store data"
               : activeSection === "Daily Rankings"
                 ? "Daily ranking changes across games, genres and markets."
-              : activeSection === "Steam"
-                ? "Player activity, public reviews, and achievements."
-                : "App Store ranking observations across markets."}
+                : activeSection === "Steam"
+                  ? "Player activity, public reviews, and achievements."
+                  : "App Store ranking observations across markets."}
             </p>
           </div>
           <span className="page-status"><span className="status-dot" /> Data pipeline not connected</span>
