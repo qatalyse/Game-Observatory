@@ -162,3 +162,48 @@ commit and concurrent-writer scenarios. CI also installs/imports the optional
 Google authentication dependency and parses the gated workflow. No real sheet
 write, live Google authorization, schedule activation, database write, or
 Tableau update is performed by CI.
+
+## Import an earlier manual snapshot
+
+Use **Actions → Import saved HoYoverse Apple history → Run workflow** on
+`main`. This separate workflow has no schedule. Its defaults select the
+November 19, 2026 export already validated during setup:
+
+| Input | Value |
+| --- | --- |
+| `source_run_id` | `44489555279` |
+| `collection_date` | `2026-11-19` |
+| `publish_to_sheets` | unchecked for validation; checked for an explicit upload |
+
+The source must be a completed, successful run of the manual targeted
+exporter in this repository. Its latest attempt supplies the two named CSV
+artifacts. Expired/missing artifacts fail the preparation job. Older roster
+versions are rejected rather than silently converted to the current roster.
+
+Preparation checks the exact CSV headers, current roster, full configured
+game/chart set, joins, original run/attempt and Singapore collection date.
+The requested date must be earlier than today's Singapore date and must match
+the saved observations. It never fetches fresh Apple charts or rewrites dates,
+ranks, timestamps, snapshot IDs or source metadata. A source chart error blocks
+publication; explicit partial charts and unresolved listings remain valid.
+
+Leave publishing unchecked for the first validation. Then run it again with
+publishing checked to import through the existing Sheets publisher. The same
+Google identity, destination variables and regional-validation flag apply.
+Publishing is restricted to `main` and shares concurrency with daily publishing.
+No credentials are obtained during preparation or a dry run.
+
+The publisher adds `collection_date, publication_key, record_key` and atomically
+writes the usual receipt. An accepted date is never replaced; importing it
+again reports `already_published`. Importing November 19 after November 20 adds
+the earlier date without changing today's rows or receipt.
+
+History is append-only: the older batch appears after existing rows in the
+physical sheet. Use `collection_date` to sort the whole table or the Tableau
+view chronologically. Do not paste raw exports directly into these managed tabs.
+
+Validated transfer artifacts use the import run ID without its attempt and
+are replaced on a full retry. Retrying only the historical publishing job can
+reuse preparation. The original daily workflow still uses attempt-specific
+artifact names: use a fresh manual daily run or rerun all jobs when recovering
+that workflow. Importing old CSVs neither enables nor changes the daily schedule.
