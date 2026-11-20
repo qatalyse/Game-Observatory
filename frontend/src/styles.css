@@ -159,10 +159,10 @@ button { font: inherit; }
 /* The published Tableau dashboard is 1000px wide; leave the rest for calculations. */
 .overview-layout { display: grid; grid-template-columns: minmax(0, 1026px) minmax(260px, 1fr); gap: 18px; align-items: start; }
 .tableau-panel { width: 100%; max-width: 1026px; }
-/* Match the 1000 x 600 chart canvas in both the wrapper and iframe.
+/* Keep the wrapper and iframe aligned at 1000 x 800.
    ResizeObserver scales the whole chart; overflow stays hidden. */
-.tableau-viewport { position: relative; max-width: 1000px; aspect-ratio: 1000 / 600; margin: 0 12px 12px; overflow: hidden; border-radius: 6px; background: #111827; }
-.tableau-frame { position: absolute; top: 0; left: 0; display: block; width: 1000px; height: 600px; transform-origin: top left; border: 0; overflow: hidden; background: #111827; }
+.tableau-viewport { position: relative; max-width: 1000px; aspect-ratio: 1000 / 800; margin: 0 12px 12px; overflow: hidden; border-radius: 6px; background: #111827; }
+.tableau-frame { position: absolute; top: 0; left: 0; display: block; width: 1000px; height: 800px; transform-origin: top left; border: 0; overflow: hidden; background: #111827; }
 .tableau-disclaimer { margin: 12px 22px 18px; color: #91a1af; font-size: .75rem; line-height: 1.6; }
 .tableau-calculations { min-width: 0; }
 .tableau-calculations .panel-heading { flex-direction: column; }
@@ -175,5 +175,6 @@ button { font: inherit; }
 .calculation-body h3 { margin: 0 0 9px; color: #dce4e9; font-size: .88rem; }
 .calculation-body p { margin: 0 0 14px; color: #91a1af; font-size: .78rem; line-height: 1.6; }
 .calculation-body pre { max-width: 100%; margin: 0; padding: 14px; overflow-x: auto; border: 1px solid #344354; border-radius: 5px; background: #0b1018; color: #c8d5de; font: .72rem/1.7 ui-monospace, SFMono-Regular, Consolas, monospace; tab-size: 4; }
+.calculation-body pre + pre { margin-top: 16px; }
 .calculation-body code { font: inherit; }
 .calculation-body pre:focus-visible { outline: 2px solid #80e12d; outline-offset: 2px; }
