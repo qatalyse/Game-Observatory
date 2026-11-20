@@ -257,7 +257,6 @@ export default function App() {
                 : "App Store ranking observations across markets."}
             </p>
           </div>
-          <span className="page-status"><span className="status-dot" /> Data pipeline not connected</span>
         </div>
 
         {activeSection === "Apple Markets" && <AppleDevCollection />}
