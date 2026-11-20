@@ -27,7 +27,7 @@ describe("Steam manual diagnostics", () => {
     render(<App />);
     expect(screen.queryByRole("region", { name: "Steam concurrent-player diagnostics" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Steam" }));
-    expect(screen.getAllByRole("checkbox")).toHaveLength(17);
+    expect(screen.getAllByRole("checkbox")).toHaveLength(19);
     expect(screen.getAllByRole<HTMLInputElement>("checkbox").every(input => input.checked)).toBe(true);
     expect((screen.getByRole("button", { name: "Check selected games" }) as HTMLButtonElement).disabled).toBe(true);
     await enterToken();
@@ -38,11 +38,11 @@ describe("Steam manual diagnostics", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("tracks the six added games and retains Sims 3 and 4 without Sims 2", () => {
+  it("tracks the eight added games and retains Sims 3 and 4 without Sims 2", () => {
     expect(steamGames.filter(game => game.id === "1222670")).toEqual([{ id: "1222670", name: "The Sims 4" }]);
     expect(steamGames.filter(game => game.id === "47890")).toEqual([{ id: "47890", name: "The Sims 3" }]);
     expect(steamGames.filter(game => game.id === "3314070")).toEqual([]);
-    expect(steamGames).toHaveLength(17);
+    expect(steamGames).toHaveLength(19);
     expect(steamGames).toEqual(expect.arrayContaining([
       { id: "4025700", name: "Heartopia" },
       { id: "4732690", name: "Arknights: Endfield" },
@@ -50,8 +50,10 @@ describe("Steam manual diagnostics", () => {
       { id: "3564740", name: "Where Winds Meet" },
       { id: "3092660", name: "Reverse: 1999" },
       { id: "4195600", name: "AFK Journey" },
+      { id: "4019220", name: "Dressmaker" },
+      { id: "1401590", name: "Disney Dreamlight Valley" },
     ]));
-    expect(new Set(steamGames.map(game => game.id)).size).toBe(17);
+    expect(new Set(steamGames.map(game => game.id)).size).toBe(19);
   });
 
   it("submits only selected IDs with the token in a header and renders zero versus missing counts", async () => {

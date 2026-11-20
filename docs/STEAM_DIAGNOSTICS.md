@@ -1,6 +1,6 @@
 # Manual Steam concurrent-player diagnostics
 
-This diagnostic checks the 17 configured Steam apps on demand. It uses the
+This diagnostic checks the 19 configured Steam apps on demand. It uses the
 official [ISteamUserStats/GetNumberOfCurrentPlayers/v1](https://partner.steamgames.com/doc/webapi/ISteamUserStats#GetNumberOfCurrentPlayers)
 method via the public Steam Web API host:
 
@@ -35,9 +35,12 @@ or a measurement timestamp; UTC timestamps record our retrieval attempts.
 | [Where Winds Meet](https://store.steampowered.com/app/3564740/) | 3564740 |
 | [Reverse: 1999](https://store.steampowered.com/app/3092660/) | 3092660 |
 | [AFK Journey](https://store.steampowered.com/app/4195600/) | 4195600 |
+| [Dressmaker](https://store.steampowered.com/app/4019220/) | 4019220 |
+| [Disney Dreamlight Valley](https://store.steampowered.com/app/1401590/) | 1401590 |
 
-The six additions above were verified against their official Steam store pages
-on 2026-11-19. P5X is listed as Persona5: The Phantom X. The Sims 2 Legacy
+The six additions from Heartopia through AFK Journey were verified against their
+official Steam store pages on 2026-11-19. Dressmaker and Disney Dreamlight Valley
+were verified on 2026-11-20. P5X is listed as Persona5: The Phantom X. The Sims 2 Legacy
 Collection (3314070) is no longer requested; previously exported artifacts
 remain unchanged.
 
@@ -50,7 +53,7 @@ or has no players. We do not infer release state from this endpoint.
 
 1. Set the server-side `DEV_COLLECT_TOKEN` environment variable in Vercel and
    redeploy. Use a strong secret; never give it a `VITE_` prefix.
-2. Open **Steam**, enter the token, and select any of the 17 games.
+2. Open **Steam**, enter the token, and select any of the 19 games.
 3. Click **Check selected games**. At least one game and a token are required.
 4. Inspect each game's count, status, HTTP/Steam result codes and UTC time.
 
@@ -75,7 +78,7 @@ curl -X POST 'https://YOUR-DEPLOYMENT/api/dev/steam-collect' \
 ```
 
 `app_ids` is required: a non-empty JSON array of unique **string** IDs from the
-catalogue, maximum 17. Unknown IDs, duplicates, numeric values, null, malformed
+catalogue, maximum 19. Unknown IDs, duplicates, numeric values, null, malformed
 JSON, negative/invalid content lengths, transfer encoding and extra object keys
 are rejected before collection. The body limit is 2,048 bytes.
 
@@ -125,7 +128,7 @@ Open **Actions → Export Steam player test dataset → Run workflow**, select
 `main`, then select **Run workflow**. The export executes on GitHub's hosted
 runner; it does not need a local checkout, Steam API key, Vercel token or database
 credentials. It requests the current player count once for every configured game
-(currently 17) using the existing Steam collector.
+(currently 19) using the existing Steam collector.
 
 Download the two artifacts from the completed run page (retained for 30 days):
 
@@ -171,7 +174,7 @@ no database, Steam key or third-party Python packages required:
 
 ```bash
 cd collector
-python -m game_observatory.steam                        # all 17 apps
+python -m game_observatory.steam                        # all 19 apps
 python -m game_observatory.steam --app-ids 3513350,413150 # selected apps
 python -m unittest discover -s tests -v
 ```
@@ -199,10 +202,10 @@ catalogue, selection validation, successful/zero/unavailable counts, malformed
 responses, HTTP/rate-limit/network/timeout failures, bounded response reads,
 authentication, direct/rewritten routes, body limits and frontend run controls.
 
-There is no Steam schedule, polling, database connection, migration or Tableau
-publication in this implementation. Manual exports persist only as CSV files
-and downloadable Actions artifacts. The existing schema is untouched.
-Historical charts and review/achievement collection remain future work.
+The diagnostic and manual export remain on demand. The separate, opt-in
+[Steam daily Sheets workflow](STEAM_DAILY_SHEETS.md) uses the same roster and
+CSV exporter. It adds daily history only when enabled; no database migration,
+Tableau publication or review/achievement collection is introduced.
 
 ## Verification notes (2026-11-18)
 
