@@ -159,10 +159,10 @@ button { font: inherit; }
 /* The published Tableau dashboard is 1000px wide; leave the rest for calculations. */
 .overview-layout { display: grid; grid-template-columns: minmax(0, 1026px) minmax(260px, 1fr); gap: 18px; align-items: start; }
 .tableau-panel { width: 100%; max-width: 1026px; }
-/* Match the 1000 x 600 chart canvas in both the wrapper and iframe.
+/* Keep the wrapper and iframe aligned at 1000 x 800.
    ResizeObserver scales the whole chart; overflow stays hidden. */
-.tableau-viewport { position: relative; max-width: 1000px; aspect-ratio: 1000 / 600; margin: 0 12px 12px; overflow: hidden; border-radius: 6px; background: #111827; }
-.tableau-frame { position: absolute; top: 0; left: 0; display: block; width: 1000px; height: 600px; transform-origin: top left; border: 0; overflow: hidden; background: #111827; }
+.tableau-viewport { position: relative; max-width: 1000px; aspect-ratio: 1000 / 800; margin: 0 12px 12px; overflow: hidden; border-radius: 6px; background: #111827; }
+.tableau-frame { position: absolute; top: 0; left: 0; display: block; width: 1000px; height: 800px; transform-origin: top left; border: 0; overflow: hidden; background: #111827; }
 .tableau-disclaimer { margin: 12px 22px 18px; color: #91a1af; font-size: .75rem; line-height: 1.6; }
 .tableau-calculations { min-width: 0; }
 .tableau-calculations .panel-heading { flex-direction: column; }
