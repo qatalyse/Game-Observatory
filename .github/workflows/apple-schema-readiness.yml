@@ -1,0 +1,75 @@
+name: Verify saved HoYoverse daily schema
+
+on:
+  push:
+    paths:
+      - ".github/workflows/apple-schema-readiness.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: collector
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Download yesterday's manual rankings
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 44489555279
+          name: apple-hoyoverse-rankings-44489555279-1
+          path: collector/data/readiness
+      - name: Download yesterday's manual chart statuses
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 44489555279
+          name: apple-hoyoverse-chart-statuses-44489555279-1
+          path: collector/data/readiness
+      - name: Validate the actual saved batch without Google
+        run: python -m game_observatory.apple_sheets --input data/readiness
+      - name: Summarize exact schemas and source coverage
+        run: |
+          python - <<'PY'
+          from collections import Counter
+          import json
+          from pathlib import Path
+          from game_observatory.apple_hoyoverse import FIELDS, STATUS_FIELDS
+          from game_observatory.apple_sheets import read_csv, prepare, RANK_HEADERS, CHART_HEADERS
+          root = Path("data/readiness")
+          rows = read_csv(root / "apple_hoyoverse_rankings.csv", FIELDS)
+          charts = read_csv(root / "apple_hoyoverse_chart_statuses.csv", STATUS_FIELDS)
+          batch = prepare(rows, charts)
+          assert len(rows) == 90 and len(charts) == 30
+          print(json.dumps({
+              "manual_run_id": 44489555279,
+              "collection_date": batch["collection_date"],
+              "rankings_columns": list(FIELDS),
+              "chart_status_columns": list(STATUS_FIELDS),
+              "rankings_column_count": len(FIELDS),
+              "chart_status_column_count": len(STATUS_FIELDS),
+              "sheets_rankings_column_count": len(RANK_HEADERS),
+              "sheets_chart_status_column_count": len(CHART_HEADERS),
+              "sheets_only_prefix": list(RANK_HEADERS[:3]),
+              "roster_versions": sorted({r["roster_version"] for r in rows}),
+              "chart_states": dict(Counter(c["chart_status"] for c in charts)),
+              "game_states": dict(Counter(r["status"] for r in rows)),
+              "partial_charts": [{k: c[k] for k in ("country", "genre", "coverage_depth", "requested_depth")}
+                                 for c in charts if c["chart_status"] == "partial"],
+              "unresolved": [{k: r[k] for k in ("country", "game_id", "status", "status_reason")}
+                             for r in rows if r["mapping_status"] == "unresolved"],
+              "ready_for_publish_validation": batch["chart_errors"] == 0,
+              "google_access": False
+          }, ensure_ascii=False))
+          PY
