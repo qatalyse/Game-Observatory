@@ -72,13 +72,13 @@ class HistoryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             rows, _ = saved(directory)
-            original = {row["snapshot_id"]: deepcopy(row) for row in rows}
+            original = {(row["snapshot_id"], row["game_id"]): deepcopy(row) for row in rows}
             batch = history.historical_batch(directory, RUN_ID, "1", "2026-11-19", clock=lambda: FIXED)
         self.assertEqual((len(batch["rankings"]), len(batch["charts"])), (90, 30))
         self.assertEqual(batch["collection_date"], "2026-11-19")
         self.assertEqual(batch["publication_key"], "apple-hoyoverse:2026-11-19")
         for row in batch["rankings"]:
-            self.assertEqual({key: row[key] for key in FIELDS}, original[row["snapshot_id"]])
+            self.assertEqual({key: row[key] for key in FIELDS}, original[(row["snapshot_id"], row["game_id"])])
             self.assertEqual(row["record_key"],
                 f"apple-hoyoverse:2026-11-19:{row['country']}:{row['genre_id']}:{row['game_id']}")
 

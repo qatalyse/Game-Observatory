@@ -1,0 +1,86 @@
+name: Verify actual historical HoYoverse import
+
+on:
+  push:
+    paths:
+      - ".github/workflows/apple-history-smoke.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      source_run_id: ${{ steps.source.outputs.source_run_id }}
+      source_attempt: ${{ steps.source.outputs.source_attempt }}
+    defaults:
+      run:
+        working-directory: collector
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test offline fixtures
+        run: python -m unittest discover -s tests -v
+      - name: Verify the source run belongs to this manual exporter
+        id: source
+        env:
+          SOURCE_RUN_ID: "44489555279"
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          from game_observatory.apple_history import positive_id, source_details
+
+          run_id = positive_id(os.environ["SOURCE_RUN_ID"], "Source run ID")
+          repo = os.environ["GITHUB_REPOSITORY"]
+          request = Request(
+              f"https://api.github.com/repos/{repo}/actions/runs/{run_id}",
+              headers={"Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                       "Accept": "application/vnd.github+json",
+                       "X-GitHub-Api-Version": "2022-11-28",
+                       "User-Agent": "GameObservatory-history-import"},
+          )
+          with urlopen(request, timeout=30) as response:
+              raw = response.read(1_000_001)
+          if len(raw) > 1_000_000:
+              raise ValueError("Source run metadata exceeds the size limit")
+          details = source_details(json.loads(raw), repo, run_id)
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              for key, value in details.items():
+                  output.write(f"{key}={value}\n")
+          print(json.dumps(details))
+          PY
+      - name: Download saved rankings from the source run
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.source.outputs.source_run_id }}
+          name: ${{ steps.source.outputs.rankings_artifact }}
+          path: collector/data/apple-history
+      - name: Download saved chart statuses from the source run
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.source.outputs.source_run_id }}
+          name: ${{ steps.source.outputs.statuses_artifact }}
+          path: collector/data/apple-history
+      - name: Validate the original date, source, roster and schemas without Google
+        env:
+          SOURCE_RUN_ID: ${{ steps.source.outputs.source_run_id }}
+          SOURCE_ATTEMPT: ${{ steps.source.outputs.source_attempt }}
+          COLLECTION_DATE: "2026-11-19"
+        run: >-
+          python -m game_observatory.apple_history --input data/apple-history
+          --source-run-id "$SOURCE_RUN_ID" --source-attempt "$SOURCE_ATTEMPT"
+          --collection-date "$COLLECTION_DATE"
+
