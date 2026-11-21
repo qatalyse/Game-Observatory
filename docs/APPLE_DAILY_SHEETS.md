@@ -4,7 +4,7 @@ This separate workflow reuses the regional collector from PR #3. The existing
 manual exporter stays available and has no Sheets dependency or schedule.
 
 **Automatic retrieval is disabled by default.** The workflow has a daily
-09:17 Asia/Singapore placeholder (`17 1 * * *`, 01:17 UTC), but its collection
+10:52 Asia/Singapore placeholder (`52 2 * * *`, 02:52 UTC), but its collection
 job skips scheduled events unless the repository variable
 `APPLE_SHEETS_DAILY_ENABLED` is exactly `true`. Changing that variable is the
 final activation step after regional-data and test-upload validation. The
