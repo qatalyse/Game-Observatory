@@ -32,7 +32,7 @@ function TableauDashboard() {
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const fitDashboard = () => setFrameScale(Math.min(1, viewport.getBoundingClientRect().width / 1000));
+    const fitDashboard = () => setFrameScale(Math.min(1, viewport.getBoundingClientRect().width / 1080));
     fitDashboard();
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(fitDashboard);
