@@ -2,8 +2,8 @@ name: Daily HoYoverse Apple retrieval and Sheets
 
 on:
   schedule:
-    # Placeholder: 10:52 Asia/Singapore (UTC+8). Change this line to change time.
-    - cron: "52 2 * * *"
+    # Placeholder: 11:11 Asia/Singapore (UTC+8). Change this line to change time.
+    - cron: "11 3 * * *"
   workflow_dispatch:
     inputs:
       publish_to_sheets:

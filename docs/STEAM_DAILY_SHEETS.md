@@ -37,7 +37,7 @@ Steam never falls back to that variable. Optional Steam-only tab overrides are
 5. Check the two new tabs and the publish result. Enable daily operation only
    after this passes, by setting `STEAM_SHEETS_DAILY_ENABLED` to `true`.
 
-The placeholder schedule is **10:52 Singapore time**, cron `52 2 * * *`.
+The placeholder schedule is **11:11 Singapore time**, cron `11 3 * * *`.
 GitHub scheduling may be delayed; timestamps record actual retrieval.
 Unset/false disables automatic Steam requests and uploads. Manual collection
 remains available. Publishing is restricted to `main`, matching the existing
