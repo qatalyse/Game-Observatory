@@ -178,7 +178,7 @@ function AppleDevCollection() {
 
 type Section = "Overview" | "Steam" | "Apple Markets";
 
-const sections: Section[] = ["Overview", "Steam", "Apple Markets"];
+const sections: Section[] = ["Overview"];
 
 type PanelInfo = {
   title: string;
@@ -215,12 +215,25 @@ function DashboardPanel({ title, description, emptyLabel }: PanelInfo) {
   );
 }
 
+function sectionFromUrl(): Section {
+  const section = new URLSearchParams(window.location.search).get("section")?.toLowerCase();
+  if (section === "steam") return "Steam";
+  if (section === "apple-markets") return "Apple Markets";
+  return "Overview";
+}
+
 export default function App() {
-  const [activeSection, setActiveSection] = useState<Section>("Overview");
+  const [activeSection, setActiveSection] = useState<Section>(sectionFromUrl);
   const embedMode = new URLSearchParams(window.location.search).get("embed") === "true";
 
+  useEffect(() => {
+    const syncSection = () => setActiveSection(sectionFromUrl());
+    window.addEventListener("popstate", syncSection);
+    return () => window.removeEventListener("popstate", syncSection);
+  }, []);
+
   return (
-    <div className="site-shell">
+    <div className={embedMode ? "site-shell embed-mode" : "site-shell"}>
       {!embedMode && <header className="site-header">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true" />

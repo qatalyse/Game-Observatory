@@ -179,3 +179,12 @@ button { font: inherit; }
 .calculation-body pre + pre { margin-top: 16px; }
 .calculation-body code { font: inherit; }
 .calculation-body pre:focus-visible { outline: 2px solid #80e12d; outline-offset: 2px; }
+
+/* Hide the host page scrollbar in iframe embed mode without disabling scrolling.
+   Keep normal scrollbars when the site is opened directly. */
+html:has(.site-shell.embed-mode) {
+  scrollbar-width: none;
+}
+html:has(.site-shell.embed-mode)::-webkit-scrollbar {
+  display: none;
+}
