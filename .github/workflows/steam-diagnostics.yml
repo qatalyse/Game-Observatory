@@ -71,7 +71,7 @@ jobs:
           import yaml
           w = yaml.load(Path(".github/workflows/steam-daily-sheets.yml").read_text(), Loader=yaml.BaseLoader)
           assert set(w["on"]) == {"schedule", "workflow_dispatch"}
-          assert w["on"]["schedule"] == [{"cron": "11 3 * * *"}]
+          assert w["on"]["schedule"] == [{"cron": "22 18 * * *"}]
           assert w["on"]["workflow_dispatch"]["inputs"]["publish_to_sheets"]["default"] == "false"
           assert "STEAM_SHEETS_DAILY_ENABLED" in w["jobs"]["collect"]["if"]
           assert "STEAM_SHEETS_DAILY_ENABLED" in w["jobs"]["publish"]["if"]
