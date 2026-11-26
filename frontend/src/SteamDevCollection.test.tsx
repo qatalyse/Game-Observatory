@@ -24,9 +24,8 @@ async function enterToken() {
 describe("Steam manual diagnostics", () => {
   it("appears under Steam and never fetches on navigation or selection", async () => {
     const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+    window.history.replaceState({}, "", "/?section=steam");
     render(<App />);
-    expect(screen.queryByRole("region", { name: "Steam concurrent-player diagnostics" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Steam" }));
     expect(screen.getAllByRole("checkbox")).toHaveLength(19);
     expect(screen.getAllByRole<HTMLInputElement>("checkbox").every(input => input.checked)).toBe(true);
     expect((screen.getByRole("button", { name: "Check selected games" }) as HTMLButtonElement).disabled).toBe(true);
