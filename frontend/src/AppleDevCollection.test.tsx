@@ -27,8 +27,8 @@ function collection(count = 100, feed = "topgrossingapplications") {
 }
 
 async function openApple() {
+  window.history.replaceState({}, "", "/?section=apple-markets");
   render(<App />);
-  await userEvent.click(screen.getByRole("button", { name: "Apple Markets" }));
   return within(screen.getByRole("region", { name: "Developer Apple RSS diagnostics" }));
 }
 
