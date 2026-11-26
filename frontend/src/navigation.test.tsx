@@ -8,7 +8,7 @@ afterEach(() => {
 });
 
 describe("dashboard navigation feature flags", () => {
-  it("hides secondary tabs by default while retaining direct URL access", () => {
+  it("hides secondary tabs by default while retaining direct URL access", async () => {
     vi.stubEnv("VITE_SHOW_STEAM_TAB", "");
     vi.stubEnv("VITE_SHOW_APPLE_MARKETS_TAB", "");
     vi.resetModules();
@@ -22,7 +22,7 @@ describe("dashboard navigation feature flags", () => {
     expect(screen.getByRole("region", { name: "Steam concurrent-player diagnostics" })).toBeTruthy();
   });
 
-  it("shows each secondary tab only when its own flag is enabled", () => {
+  it("shows each secondary tab only when its own flag is enabled", async () => {
     vi.stubEnv("VITE_SHOW_STEAM_TAB", "true");
     vi.stubEnv("VITE_SHOW_APPLE_MARKETS_TAB", "");
     vi.resetModules();
