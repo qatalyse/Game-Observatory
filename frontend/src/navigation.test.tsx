@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import App from "./App";
 
 afterEach(() => {
   cleanup();
@@ -12,7 +11,9 @@ describe("dashboard navigation feature flags", () => {
   it("hides secondary tabs by default while retaining direct URL access", () => {
     vi.stubEnv("VITE_SHOW_STEAM_TAB", "");
     vi.stubEnv("VITE_SHOW_APPLE_MARKETS_TAB", "");
+    vi.resetModules();
     window.history.replaceState({}, "", "/?section=steam");
+    const { default: App } = await import("./App");
     render(<App />);
     expect(screen.getByRole("button", { name: "Overview" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Steam" })).toBeNull();
@@ -24,7 +25,9 @@ describe("dashboard navigation feature flags", () => {
   it("shows each secondary tab only when its own flag is enabled", () => {
     vi.stubEnv("VITE_SHOW_STEAM_TAB", "true");
     vi.stubEnv("VITE_SHOW_APPLE_MARKETS_TAB", "");
+    vi.resetModules();
     window.history.replaceState({}, "", "/");
+    const { default: App } = await import("./App");
     const { unmount } = render(<App />);
     expect(screen.getByRole("button", { name: "Steam" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Apple Markets" })).toBeNull();
@@ -32,7 +35,9 @@ describe("dashboard navigation feature flags", () => {
 
     vi.stubEnv("VITE_SHOW_STEAM_TAB", "");
     vi.stubEnv("VITE_SHOW_APPLE_MARKETS_TAB", "true");
-    render(<App />);
+    vi.resetModules();
+    const { default: AppleEnabledApp } = await import("./App");
+    render(<AppleEnabledApp />);
     expect(screen.queryByRole("button", { name: "Steam" })).toBeNull();
     expect(screen.getByRole("button", { name: "Apple Markets" })).toBeTruthy();
   });
