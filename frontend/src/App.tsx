@@ -178,7 +178,13 @@ function AppleDevCollection() {
 
 type Section = "Overview" | "Steam" | "Apple Markets";
 
-const sections: Section[] = ["Overview"];
+const showSteamTab = import.meta.env.VITE_SHOW_STEAM_TAB === "true";
+const showAppleMarketsTab = import.meta.env.VITE_SHOW_APPLE_MARKETS_TAB === "true";
+const sections: Section[] = [
+  "Overview",
+  ...(showSteamTab ? ["Steam" as const] : []),
+  ...(showAppleMarketsTab ? ["Apple Markets" as const] : []),
+];
 
 type PanelInfo = {
   title: string;
